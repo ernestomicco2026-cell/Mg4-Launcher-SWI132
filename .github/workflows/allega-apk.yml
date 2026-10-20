@@ -27,7 +27,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
-          VER="${TAG#swi132-}"; VER="${VER#v}"
+          VER="${TAG#swi132-}"; VER="${VER#v}"; VER="${VER#.}"
           APK="releases/MG4Launcher-SWI132-${VER}.apk"
           if [ ! -f "$APK" ]; then
             echo "::error::Non trovo $APK nel repository per il tag $TAG"
