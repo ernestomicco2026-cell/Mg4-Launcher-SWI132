@@ -70,14 +70,14 @@ mostra un avviso con il link alla versione giusta e non tenta nessun collegament
 | **SWI133** | MG4 Luxury MY24 | [Mg4-Launcher-SWI133](https://github.com/ernestomicco2026-cell/Mg4-Launcher-SWI133) (in preparazione) | — |
 
 **Come sapere quale software hai:** con il computer collegato all'auto
-`adb shell getprop ro.build.mt2712.version` → se inizia con `SWI132-` è la **SWI132** (es. `SWI132-29958-1100R43`).
+`adb shell getprop ro.build.mt2712.version` → l'inizio dice il software: `SWI68-…`, `SWI69-…`, `SWI132-…` o `SWI133-…`.
 Se il launcher è già installato: impostazioni → riga **MG4 Launcher X.Y.Z · repository** sotto *Aggiornamenti*;
 il nome del repository dice quale versione hai.
 
 There are **four different launchers**, one per MG4 infotainment software, and they are not interchangeable. If you
 install the wrong one, the launcher recognises it, shows a notice with a link to the right version and does not try to
-connect to the car. Check your software with `adb shell getprop ro.build.mt2712.version` (starts with `SWI132-` =
-SWI132) and use the matching repository above.
+connect to the car. Check your software with `adb shell getprop ro.build.mt2712.version` (it starts with `SWI68-`, `SWI69-`, `SWI132-` or
+`SWI133-`) and use the matching repository above.
 
 ---
 
