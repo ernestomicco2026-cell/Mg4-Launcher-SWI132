@@ -24,7 +24,7 @@
 > what works and what doesn't.
 
 > Progetto amatoriale e **non ufficiale**: non è affiliato né approvato da MG Motor o SAIC Motor.
-> I nomi MG / MG4 servono solo a indicare l'auto compatibile (infotainment SWI132). Installalo e usalo a tuo rischio.
+> I nomi MG / MG4 servono solo a indicare l'auto compatibile (infotainment SWI132 - MY24). Installalo e usalo a tuo rischio.
 >
 > Hobby project, **not official**: not affiliated with or endorsed by MG Motor or SAIC Motor.
 > The MG / MG4 names only identify the compatible car (SWI132 infotainment). Install and use it at your own risk.
