@@ -9,7 +9,7 @@
 > ⚠️ **Compatibilità / Compatibility:** solo infotainment **SWI132 (MG4 MY24)** · only **SWI132 (MG4 MY24)** infotainment.
 > Per gli altri software / for the other software: **SWI68 SAIC 1.0+** → [Mg4-Launcher-SWI68](https://github.com/ernestomicco2026-cell/Mg4-Launcher-SWI68) ·
 > **SWI69 Color Radio** → [Mg4-Launcher-SWI69](https://github.com/ernestomicco2026-cell/Mg4-Launcher-SWI69) ·
-> **SWI133 (MG4 Luxury MY24)** → [Mg4-Launcher-SWI133](https://github.com/ernestomicco2026-cell/Mg4-Launcher-SWI133) (in preparazione / in preparation).
+> **SWI133 (MG4 Luxury MY24)** → [Mg4-Launcher-SWI133](https://github.com/ernestomicco2026-cell/Mg4-Launcher-SWI133).
 
 > 🧪 **Versione sperimentale: ho bisogno di voi.** Non ho un'auto con il software SWI132, quindi questa versione non
 > l'ho mai potuta provare in auto: l'ho costruita leggendo il firmware `SWI132-29958-1100R43`, partendo dal launcher
@@ -67,7 +67,7 @@ mostra un avviso con il link alla versione giusta e non tenta nessun collegament
 | **SWI68 SAIC 1.0+** | MG4 | [Mg4-Launcher-SWI68](https://github.com/ernestomicco2026-cell/Mg4-Launcher-SWI68) | `MG4Launcher-X.Y.Z.apk` |
 | **SWI69 Color Radio** | MG4 MY23 | [Mg4-Launcher-SWI69](https://github.com/ernestomicco2026-cell/Mg4-Launcher-SWI69) | `MG4Launcher-SWI69-X.Y.Z.apk` |
 | **SWI132** | MG4 MY24 | **questo repository** | `MG4Launcher-SWI132-X.Y.Z.apk` |
-| **SWI133** | MG4 Luxury MY24 | [Mg4-Launcher-SWI133](https://github.com/ernestomicco2026-cell/Mg4-Launcher-SWI133) (in preparazione) | — |
+| **SWI133** | MG4 Luxury MY24 | [Mg4-Launcher-SWI133](https://github.com/ernestomicco2026-cell/Mg4-Launcher-SWI133) | `MG4Launcher-SWI133-X.Y.Z.apk` |
 
 **Come sapere quale software hai:** con il computer collegato all'auto
 `adb shell getprop ro.build.mt2712.version` → l'inizio dice il software: `SWI68-…`, `SWI69-…`, `SWI132-…` o `SWI133-…`.
