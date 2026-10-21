@@ -27,7 +27,7 @@ public final class VehicleClient {
 
     private static final String HUB = "com.saicmotor.carapi.ICarAdapterService";
     private static final int HUB_QUERY_CLIENT = 1;
-    private static final int BIND_EV = 4, BIND_HVAC = 7, BIND_CONFIG = 2, BIND_LAMP = 13, BIND_IPK = 5;
+    private static final int BIND_EV = 4, BIND_HVAC = 7, BIND_CONFIG = 2, BIND_LAMP = 13, BIND_IPK = 5, BIND_VS = 8;
 
     private static final String EV = "com.saicmotor.carapi.ev.ICarEvService";
     private static final int EV_PERCENT = 3;          // int  getChargePercentChange
@@ -56,12 +56,35 @@ public final class VehicleClient {
     private static final int AC_SWITCH_DEFROST = 27, AC_GET_DEFROST = 28;     // parabrezza
     // ricircolo, come la barra clima della home originale: "cambia" senza argomenti; 0 interno, 1 esterno, 2 auto
     private static final int AC_SWITCH_LOOP = 15, AC_GET_LOOP = 16;
+    // SWI132: sedili e volante riscaldati, come l'app Clima originale HVAC_my24_ll (HvacManager / t11_eh32):
+    // switchSeatHeatStatus(sedile) = "premuto" (l'auto passa al livello successivo), getSeatHeatStatus(sedile) 0..3,
+    // setSteeringWheelHeatStatus(1) = "premuto" (commuta), getSteeringWheelHeatStatus 3 = acceso
+    private static final int AC_SWITCH_SEAT_HEAT = 31, AC_GET_SEAT_HEAT = 32, AC_SET_WHEEL_HEAT = 70, AC_GET_WHEEL_HEAT = 71;
+    private static final int SEAT_DRIVER = 1, SEAT_PASSENGER = 2;
+    // chiavi dello stato "previsto" (diverse dai codici già usati)
+    private static final int K_SEAT_L = 70032, K_SEAT_R = 70033, K_WHEEL = 70071;
 
     // fendinebbia, come la schermata dell'auto originale: set(1) = "premuto" (commuta), get 1 = acceso
     private static final String LAMP = "com.saicmotor.carapi.lamp.ICarLampService";
     private static final int LAMP_SET_REAR_FOG = 30, LAMP_GET_REAR_FOG = 31, LAMP_SET_FRONT_FOG = 40, LAMP_GET_FRONT_FOG = 41;
     private static final String CONFIG = "com.saicmotor.carapi.config.ICarConfigService";
     private static final int CONFIG_FRONT_FOG = 60;   // getFrontFrogConfigData: 0 = fendinebbia anteriori presenti
+    // assistenza alla guida, come l'app Impostazioni veicolo originale (SWI69 R45, verificata identica su SWI132 R43)
+    private static final int CONFIG_LKA = 20;         // getLkaConfigData: 0 = LKA presente, 1 assente
+    private static final int CONFIG_ONE_PEDAL = 43;
+    // SWI132, come HvacService originale: getCarModelConfigData, getSeatHeatingConfigData (2 = sedili riscaldati
+    // assenti), getSteeringWheelHeatConfig (0 = volante riscaldato presente, solo sui modelli EH32 elencati sotto)
+    private static final int CONFIG_CAR_MODEL = 8, CONFIG_SEAT_HEAT = 23, CONFIG_WHEEL_HEAT = 52;
+    /** AppCache.hasSteeringWheelHeatEH32CarModeConfig() dell'app Clima SWI132. */
+    private static final int[] WHEEL_HEAT_MODELS = {69, 130, 131, 166, 173, 177, 132, 198, 200};   // getOnePedalConfig: 0 = One Pedal presente (H17A), 1 assente
+    private static final String VS = "com.saicmotor.carapi.vs.ICarVehicleSettingService";
+    // LKA (getLasMode/setLasMode): 0 nessuna richiesta, 1 spento, 2 LDW, 3 LDP, 4 LKA, 5 ELK
+    private static final int VS_SET_LAS = 30, VS_GET_LAS = 31;
+    // One Pedal: setSignalPedalState / getSignalPedalState (1 acceso, 0 spento) / getSignalPedalEnable (blocco:
+    // 1 limite di carica, 2 sistema frenante, 3 condizioni, 0 nessuno)
+    private static final int VS_SET_OPD = 162, VS_GET_OPD = 163, VS_GET_OPD_INHIBIT = 164;
+    // chiavi dello stato "previsto" (diverse dai codici delle luci: 31 è anche il retronebbia)
+    private static final int K_LKA = 80031, K_OPD = 80163;
     private static final String IPK = "com.saicmotor.carapi.ipk.ICarIpkService";
     private static final int IPK_TYRE_UNIT = 29;      // 0 bar, 1 kPa, 2 psi (scelta dell'utente sul quadro)
 
@@ -102,12 +125,16 @@ public final class VehicleClient {
         public int acTemp = -1;           // 15 = LO, 16..30, 31 = HI
         public int hvacPower = -1;
         public int acOn = -1, autoOn = -1, defrostOn = -1;   // 1 acceso, 0 spento, -1 sconosciuto
-        public int seatLeft = -1, seatRight = -1;          // SWI69 R45: nessun comando dei sedili riscaldati
-        public int wheelHeat = -1;                         // SWI69 R45: nessun comando del volante riscaldato
+        public int seatLeft = -1, seatRight = -1;          // 0..3, -1 non disponibile (dalla configurazione dell'auto)
+        public int wheelHeat = -1;                         // 1 acceso, 0 spento, -1 non disponibile
         public float[] tireBar = {Float.NaN, Float.NaN, Float.NaN, Float.NaN};   // AS, AD, PS, PD
         public float insideTemp = Float.NaN;
         public int rearFog = -1, frontFog = -1;           // 1 acceso, 0 spento, -1 non disponibile
         public boolean hasFrontFog;
+        public int lka = -1;              // 1 acceso, 0 spento, -1 non disponibile
+        public int lkaMode = -1;          // valore grezzo dell'auto (vedi VS_GET_LAS)
+        public int opd = -1;              // One Pedal Drive: 1 acceso, 0 spento, -1 non disponibile
+        public int opdInhibit;            // motivo del blocco OPD (1 in carica, 2 sistema, 3 condizioni), 0 nessuno
         public int fanLevel = -1;         // 0 spenta, 1..max, 15 auto
         public int fanMin = FAN_MIN, fanMax = FAN_MAX;
         public float outsideTemp = -10000f;   // °C
@@ -296,6 +323,11 @@ public final class VehicleClient {
                             Diag.put("clima.ricircolo", "non supportato: " + ex.getClass().getSimpleName());
                         }
                     }
+                    try {
+                        readComfort(a, s, now);
+                    } catch (Exception ex) {
+                        Diag.error("comfort", ex.toString());
+                    }
                 }
             } catch (Exception ex) {
                 Diag.error("clima", ex.toString());
@@ -471,6 +503,96 @@ public final class VehicleClient {
             Diag.error("luci", e.toString());
             forget(BIND_LAMP);
         }
+        try {
+            readAssist(s, android.os.SystemClock.uptimeMillis());
+        } catch (Exception e) {
+            Diag.error("assistenza", e.toString());
+            forget(BIND_VS);
+        }
+    }
+
+    private int lkaConfig = Integer.MIN_VALUE, onePedalConfig = Integer.MIN_VALUE;
+    private Boolean vsValid;
+
+    /** Servizio impostazioni veicolo, solo se il collegamento 8 risponde con l'interfaccia giusta. */
+    private IBinder vs() throws RemoteException {
+        IBinder b = sub(BIND_VS);
+        if (b == null) return null;
+        if (vsValid == null) {
+            String d = b.getInterfaceDescriptor();
+            vsValid = VS.equals(d);
+            Diag.put("assistenza.servizio", String.valueOf(d));
+        }
+        return vsValid ? b : null;
+    }
+
+    /** LKA e OPD: configurazione letta una volta, stato a ogni giro. Senza configurazione valida il pulsante non c'è. */
+    private void readAssist(State s, long now) throws Exception {
+        if (lkaConfig == Integer.MIN_VALUE || onePedalConfig == Integer.MIN_VALUE) {
+            IBinder cfg = sub(BIND_CONFIG);
+            if (cfg == null) return;
+            lkaConfig = Rpc.callInt(cfg, CONFIG, CONFIG_LKA);
+            onePedalConfig = Rpc.callInt(cfg, CONFIG, CONFIG_ONE_PEDAL);
+            Diag.put("assistenza.config", "LKA " + lkaConfig + ", One Pedal " + onePedalConfig);
+        }
+        if (lkaConfig != 0 && onePedalConfig != 0) return;
+        IBinder v = vs();
+        if (v == null) return;
+        if (lkaConfig == 0) {
+            int mode = Rpc.callInt(v, VS, VS_GET_LAS);
+            s.lkaMode = mode;
+            int on = mode == 1 ? 0 : mode >= 2 && mode <= 5 ? 1 : -1;
+            s.lka = held(K_LKA, on, now);
+        }
+        if (onePedalConfig == 0) {
+            int o = Rpc.callInt(v, VS, VS_GET_OPD);
+            s.opd = held(K_OPD, o == 1 ? 1 : o == 0 ? 0 : -1, now);
+            s.opdInhibit = Rpc.callInt(v, VS, VS_GET_OPD_INHIBIT);
+        }
+        Diag.put("assistenza.stato", "LKA " + s.lka + " (modo " + s.lkaMode + "), OPD " + s.opd + " (blocco " + s.opdInhibit + ")");
+    }
+
+    /** LKA acceso/spento: come l'interruttore dell'app originale (SWI69 e SWI132), accende con 2 (LDW) e spegne con 1. */
+    public void toggleLka() {
+        if (bg == null) return;
+        int cur = predicted(K_LKA, last.lka);
+        if (cur < 0) return;
+        boolean turnOn = cur == 0;
+        hold(K_LKA, turnOn ? 1 : 0);
+        bg.post(() -> {
+            try {
+                IBinder v = vs();
+                if (v == null) return;
+                int value = turnOn ? 2 : 1;
+                Rpc.call(v, VS, VS_SET_LAS, p -> p.writeInt(value));
+                Diag.put("comando.ultimo", "assistenza.lka · " + (turnOn ? "acceso (modo " + value + ")" : "spento"));
+            } catch (Exception e) {
+                Diag.error("assistenza.lka", e.toString());
+                forget(BIND_VS);
+            }
+            poll();
+        });
+    }
+
+    /** One Pedal Drive acceso/spento. Se l'auto lo blocca (in carica, condizioni…) lo stato letto resta com'era. */
+    public void toggleOpd() {
+        if (bg == null) return;
+        int cur = predicted(K_OPD, last.opd);
+        if (cur < 0) return;
+        int next = cur == 1 ? 0 : 1;
+        hold(K_OPD, next);
+        bg.post(() -> {
+            try {
+                IBinder v = vs();
+                if (v == null) return;
+                Rpc.call(v, VS, VS_SET_OPD, p -> p.writeInt(next));
+                Diag.put("comando.ultimo", "assistenza.opd · " + (next == 1 ? "acceso" : "spento") + " · blocco " + Rpc.callInt(v, VS, VS_GET_OPD_INHIBIT));
+            } catch (Exception e) {
+                Diag.error("assistenza.opd", e.toString());
+                forget(BIND_VS);
+            }
+            poll();
+        });
     }
 
     // ---- stati di ricarica ----------------------------------------------------------------------
@@ -567,14 +689,133 @@ public final class VehicleClient {
         press(BIND_LAMP, LAMP, LAMP_SET_FRONT_FOG, true, LAMP_GET_FRONT_FOG, last.frontFog, "luci.fendinebbia");
     }
 
-    /** Sedili e volante riscaldati: la SWI69 R45 non ha questi comandi (i pulsanti restano nascosti). */
+    // ---- sedili e volante riscaldati (SWI132) ------------------------------------------------------
+
+    private int carModelConfig = Integer.MIN_VALUE, seatHeatConfig = Integer.MIN_VALUE, wheelHeatConfig = Integer.MIN_VALUE;
+    private volatile int seatTargetLeft = -1, seatTargetRight = -1;
+
+    /** Configurazione letta una volta (come l'app Clima originale); stato a ogni giro. Senza comando il pulsante non c'è. */
+    private void readComfort(IBinder a, State s, long now) throws Exception {
+        if (seatHeatConfig == Integer.MIN_VALUE) {
+            IBinder cfg = sub(BIND_CONFIG);
+            if (cfg == null) return;
+            carModelConfig = Rpc.callInt(cfg, CONFIG, CONFIG_CAR_MODEL);
+            wheelHeatConfig = Rpc.callInt(cfg, CONFIG, CONFIG_WHEEL_HEAT);
+            seatHeatConfig = Rpc.callInt(cfg, CONFIG, CONFIG_SEAT_HEAT);
+            Diag.put("comfort.config", "modello " + carModelConfig + ", sedili " + seatHeatConfig + " (2 = assenti), volante "
+                    + wheelHeatConfig + " (0 = presente) → sedili " + (hasSeatHeat() ? "sì" : "no") + ", volante " + (hasWheelHeat() ? "sì" : "no"));
+        }
+        int ls = -1, rs = -1, wh = -1;
+        if (hasSeatHeat()) {
+            ls = seatLevel(a, SEAT_DRIVER);
+            rs = seatLevel(a, SEAT_PASSENGER);
+            s.seatLeft = held(K_SEAT_L, ls >= 0 && ls <= 3 ? ls : -1, now);
+            s.seatRight = held(K_SEAT_R, rs >= 0 && rs <= 3 ? rs : -1, now);
+        }
+        if (hasWheelHeat()) {
+            wh = Rpc.callInt(a, AC, AC_GET_WHEEL_HEAT);
+            s.wheelHeat = held(K_WHEEL, wh == 3 ? 1 : 0, now);
+        }
+        Diag.put("clima.sedili sx/dx · volante", ls + " / " + rs + " · " + wh);
+    }
+
+    private boolean hasSeatHeat() {
+        return seatHeatConfig != Integer.MIN_VALUE && seatHeatConfig != 2;
+    }
+
+    private boolean hasWheelHeat() {
+        if (wheelHeatConfig != 0) return false;
+        for (int m : WHEEL_HEAT_MODELS) if (m == carModelConfig) return true;
+        return false;
+    }
+
+    private static int seatLevel(IBinder a, int seat) throws RemoteException {
+        Integer v = Rpc.call(a, AC, AC_GET_SEAT_HEAT, p -> p.writeInt(seat), android.os.Parcel::readInt);
+        return v == null ? -1 : v;
+    }
+
+    /**
+     * Sedile (barra senza gruppi): ogni tocco invia "premuto" e l'auto passa al livello successivo con il suo ciclo,
+     * come l'app Clima originale; si mostra subito il livello previsto (spento → 3 → 2 → 1 → spento) e poi quello letto.
+     */
     public void pressSeatLeft() {
+        pressSeat(SEAT_DRIVER, K_SEAT_L, last.seatLeft, "clima.sedileSx");
     }
 
     public void pressSeatRight() {
+        pressSeat(SEAT_PASSENGER, K_SEAT_R, last.seatRight, "clima.sedileDx");
     }
 
+    private void pressSeat(int seat, int key, int current, String what) {
+        if (bg == null) return;
+        int cur = predicted(key, current);
+        if (cur < 0) return;
+        hold(key, cur == 0 ? 3 : cur - 1);
+        bg.post(() -> {
+            try {
+                IBinder a = sub(BIND_HVAC);
+                if (a != null) Rpc.call(a, AC, AC_SWITCH_SEAT_HEAT, p -> p.writeInt(seat));
+                Diag.put("comando.ultimo", what + " · premuto");
+            } catch (Exception e) {
+                Diag.error(what, e.toString());
+                forget(BIND_HVAC);
+            }
+            poll();
+        });
+    }
+
+    /** Volante: acceso ↔ spento con un "premuto", come l'app Clima originale (l'auto usa 3 per acceso). */
     public void toggleWheelHeat() {
+        if (bg == null) return;
+        int cur = predicted(K_WHEEL, last.wheelHeat);
+        if (cur < 0) return;
+        hold(K_WHEEL, cur > 0 ? 0 : 1);
+        bg.post(() -> {
+            try {
+                IBinder a = sub(BIND_HVAC);
+                if (a != null) Rpc.call(a, AC, AC_SET_WHEEL_HEAT, p -> p.writeInt(1));
+                Diag.put("comando.ultimo", "clima.volante · premuto");
+            } catch (Exception e) {
+                Diag.error("clima.volante", e.toString());
+                forget(BIND_HVAC);
+            }
+            poll();
+        });
+    }
+
+    /**
+     * Gruppo Comfort: porta il sedile al livello successivo nell'ordine spento → 1 → 2 → 3 → spento, come la SWI68.
+     * L'auto conosce solo "premuto" (e nessun "spegni"): si preme, distanziando e rileggendo, finché il livello letto è
+     * quello voluto (al massimo 4 pressioni).
+     */
+    public void stepSeat(boolean driver) {
+        if (bg == null) return;
+        int key = driver ? K_SEAT_L : K_SEAT_R, seat = driver ? SEAT_DRIVER : SEAT_PASSENGER;
+        int cur = predicted(key, driver ? last.seatLeft : last.seatRight);
+        if (cur < 0) return;
+        int target = (cur + 1) % 4;
+        hold(key, target);
+        if (driver) seatTargetLeft = target; else seatTargetRight = target;
+        String what = driver ? "clima.sedileSx" : "clima.sedileDx";
+        bg.post(() -> {
+            if ((driver ? seatTargetLeft : seatTargetRight) != target) return;   // superato da un tocco più recente
+            try {
+                IBinder a = sub(BIND_HVAC);
+                if (a == null) return;
+                int now = seatLevel(a, seat), presses = 0;
+                while (now != target && presses < 4 && (driver ? seatTargetLeft : seatTargetRight) == target) {
+                    Rpc.call(a, AC, AC_SWITCH_SEAT_HEAT, p -> p.writeInt(seat));
+                    presses++;
+                    Thread.sleep(450);
+                    now = seatLevel(a, seat);
+                }
+                Diag.put("comando.ultimo", what + " · livello " + target + " · pressioni " + presses + " · letto " + now);
+            } catch (Exception e) {
+                Diag.error(what, e.toString());
+                forget(BIND_HVAC);
+            }
+            poll();
+        });
     }
 
     /**

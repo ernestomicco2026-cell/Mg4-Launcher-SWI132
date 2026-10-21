@@ -1,6 +1,6 @@
 {
-  "version": "0.1.0",
-  "apk": "releases/MG4Launcher-SWI132-0.1.0.apk",
-  "size": 557892,
-  "notes": "Prima versione per SWI132 (MG4 MY24), sperimentale: stessa grafica e funzioni della SWI69 0.3.1, servizi verificati sul firmware SWI132. Mandate il log diagnostico."
+  "version": "0.2.0",
+  "apk": "releases/MG4Launcher-SWI132-0.2.0.apk",
+  "size": 523997,
+  "notes": "Gruppi Clima e Comfort, LKA e OPD, loghi radio per paese (FM e DAB), riavvio del dongle CarPlay/AA, launcher più leggero."
 }
