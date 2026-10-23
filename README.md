@@ -30,6 +30,7 @@
 > The MG / MG4 names only identify the compatible car (SWI132 infotainment). Install and use it at your own risk.
 
 ---
+<img width="1920" alt="Home MG4 Launcher SWI132 0.2.1 – temperatura e batteria più grandi (simulazione)" src="screenshots/MG4Launcher-SWI132-0.2.1-home.png" />
 <img width="1920" alt="Home MG4 Launcher SWI132 0.2.1 – percentuale batteria in grande (simulazione)" src="screenshots/MG4Launcher-SWI132-0.2.1-percentuale.png" />
 <img width="1920" alt="Home MG4 Launcher SWI132 0.2.0 – gruppi Clima e Comfort, LKA e OPD, loghi radio (simulazione)" src="screenshots/MG4Launcher-SWI132-0.2.0-home.png" />
 
@@ -222,7 +223,9 @@ Dal launcher: impostazioni → **Apri la home originale MG**. Per renderla di nu
 adb shell cmd package set-home-activity com.saicmotor.launcher/.view.MainActivity
 ```
 
-Per rimuovere del tutto il launcher: `adb uninstall com.mg4.launcher`. L'app originale non viene mai modificata.
+Per rimuovere del tutto il launcher, anche senza computer (dalla 0.2.1): impostazioni → **Disinstalla MG4 Launcher**.
+Rimette la home MG originale e toglie il launcher dall'auto. Da computer: `adb uninstall com.mg4.launcher`.
+L'app originale non viene mai modificata.
 
 ### Comandi utili
 
@@ -263,6 +266,9 @@ ricarica, clima, fendinebbia, radio, media, CarPlay / Android Auto, telecamere) 
 - **Niente più crash all'accensione**: prima dello sblocco del sistema le impostazioni del launcher non sono leggibili;
   ora il launcher aspetta lo sblocco invece di chiudersi a ogni avvio.
 - **Percentuale batteria in grande** (Impostazioni → Home): inverte km e percentuale.
+- **Temperatura interna/esterna e percentuale della batteria più grandi** e più chiare, leggibili durante la guida.
+- **Disinstallazione dall'auto**: Impostazioni → Sistema → *Disinstalla MG4 Launcher*. Rimette la home MG originale
+  come predefinita e toglie il launcher, senza computer.
 
 #### 0.2.0
 
@@ -460,7 +466,9 @@ From the launcher: settings → **Apri la home originale MG**. To make it the de
 adb shell cmd package set-home-activity com.saicmotor.launcher/.view.MainActivity
 ```
 
-To remove the launcher completely: `adb uninstall com.mg4.launcher`. The original app is never modified.
+To remove the launcher completely, even without a computer (since 0.2.1): settings → **Uninstall MG4 Launcher**.
+It restores the original MG home and removes the launcher from the car. From a computer: `adb uninstall com.mg4.launcher`.
+The original app is never modified.
 
 ### Reporting a problem (and helping me improve it)
 
@@ -486,6 +494,9 @@ charging, climate, fog lights, radio, media, CarPlay / Android Auto, cameras) an
 - **No more crashes at start-up**: before the system is unlocked the launcher settings can't be read; the launcher now
   waits for the unlock instead of closing at every start.
 - **Large battery percentage** (Settings → Home): swaps km and percentage.
+- **Bigger, brighter inside/outside temperature and battery percentage**, easy to read while driving.
+- **Uninstall from the car**: Settings → System → *Uninstall MG4 Launcher*. It restores the original MG home as
+  default and removes the launcher, no computer needed.
 
 #### 0.2.0
 
