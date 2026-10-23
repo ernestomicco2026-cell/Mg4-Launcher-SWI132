@@ -2,7 +2,7 @@
 
 🇮🇹 [Italiano](#italiano) · 🇬🇧 [English](#english)
 
-**Ultima versione / Latest version: [0.2.0](releases/MG4Launcher-SWI132-0.2.0.apk)** · 🧪 **sperimentale / experimental**
+**Ultima versione / Latest version: [0.2.1](releases/MG4Launcher-SWI132-0.2.1.apk)** · 🧪 **sperimentale / experimental**
 
 <a href="https://www.paypal.com/pool/9tv7fQ36nA?sr=wccr"><img alt="Sostieni il progetto con PayPal · Support the project with PayPal" src="https://img.shields.io/badge/Sostieni%20il%20progetto-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white"></a>
 
@@ -30,6 +30,7 @@
 > The MG / MG4 names only identify the compatible car (SWI132 infotainment). Install and use it at your own risk.
 
 ---
+<img width="1920" alt="Home MG4 Launcher SWI132 0.2.1 – percentuale batteria in grande (simulazione)" src="screenshots/MG4Launcher-SWI132-0.2.1-percentuale.png" />
 <img width="1920" alt="Home MG4 Launcher SWI132 0.2.0 – gruppi Clima e Comfort, LKA e OPD, loghi radio (simulazione)" src="screenshots/MG4Launcher-SWI132-0.2.0-home.png" />
 
 <sub>Anteprima della home 0.2.0: grafica identica alla versione SWI69 0.3.2, con il gruppo Comfort (auto con sedili e volante riscaldati); i valori, le stazioni e i loghi sono di esempio · Preview of the 0.2.0 home: same design as SWI69 version 0.3.2, with the Comfort group (car with heated seats and steering wheel); values, stations and logos are examples.</sub>
@@ -171,7 +172,7 @@ Ci sono due modi per installarlo: da chiavetta USB, se riesci ad aprire un file 
 
 Serve poter aprire un file manager sull'infotainment.
 
-1. Copia `MG4Launcher-SWI132-0.2.0.apk` su una chiavetta USB formattata **FAT32** o **exFAT**.
+1. Copia `MG4Launcher-SWI132-0.2.1.apk` su una chiavetta USB formattata **FAT32** o **exFAT**.
 2. Inserisci la chiavetta nell'auto, apri il file manager e tocca l'APK.
 3. Se Android avvisa che non può installare app da questa fonte: tocca **Impostazioni**, attiva
    **Consenti da questa fonte** per il file manager e torna indietro.
@@ -188,7 +189,7 @@ Il firmware MG può bloccare l'installazione normale delle app: l'opzione `-f` l
 
 1. Installa:
    ```bash
-   adb install -r -f MG4Launcher-SWI132-0.2.0.apk
+   adb install -r -f MG4Launcher-SWI132-0.2.1.apk
    ```
 2. Rendilo la home predefinita:
    ```bash
@@ -253,6 +254,15 @@ Insieme al log, scrivi in una [segnalazione](https://github.com/ernestomicco2026
 ricarica, clima, fendinebbia, radio, media, CarPlay / Android Auto, telecamere) e la revisione del software.
 
 ### Versioni
+
+#### 0.2.1
+- **La home si apre da sola all'accensione**: dai log di questa versione la home MG arriva spesso *dopo* il launcher
+  (da 13 a 52 secondi dopo), quando il controllo dell'avvio era già finito. Ora, finché la home MG non è comparsa, il launcher la
+  aspetta (al massimo 3 minuti) e poi torna davanti; anche *Premi Home da solo* riprova invece di fare un solo
+  tentativo. Retrocamera, CarPlay/Android Auto, chiamate e la home MG aperta apposta restano come prima.
+- **Niente più crash all'accensione**: prima dello sblocco del sistema le impostazioni del launcher non sono leggibili;
+  ora il launcher aspetta lo sblocco invece di chiudersi a ogni avvio.
+- **Percentuale batteria in grande** (Impostazioni → Home): inverte km e percentuale.
 
 #### 0.2.0
 
@@ -402,7 +412,7 @@ There are two ways to install it: from a USB stick, if you can open a file manag
 
 You need to be able to open a file manager on the infotainment.
 
-1. Copy `MG4Launcher-SWI132-0.2.0.apk` to a USB stick formatted as **FAT32** or **exFAT**.
+1. Copy `MG4Launcher-SWI132-0.2.1.apk` to a USB stick formatted as **FAT32** or **exFAT**.
 2. Plug it into the car, open the file manager and tap the APK.
 3. If Android says it cannot install apps from this source: tap **Settings**, enable
    **Allow from this source** for the file manager and go back.
@@ -418,7 +428,7 @@ The MG firmware may block normal app installs; the `-f` option allows it.
 
 1. Install it:
    ```bash
-   adb install -r -f MG4Launcher-SWI132-0.2.0.apk
+   adb install -r -f MG4Launcher-SWI132-0.2.1.apk
    ```
 2. Make it the default home:
    ```bash
@@ -467,6 +477,15 @@ Together with the log, describe in an [issue](https://github.com/ernestomicco202
 charging, climate, fog lights, radio, media, CarPlay / Android Auto, cameras) and your software revision.
 
 ### Changelog
+
+#### 0.2.1
+- **The home opens by itself at start-up**: the logs of this version show the MG home often arriving *after* the
+  launcher (13 to 52 seconds later), when the start-up check had already ended. Now, until the MG home has appeared,
+  the launcher waits for it (up to 3 minutes) and then comes back to the front; *Press Home automatically* also
+  retries instead of trying once. Rear camera, CarPlay/Android Auto, calls and an MG home opened on purpose are left alone.
+- **No more crashes at start-up**: before the system is unlocked the launcher settings can't be read; the launcher now
+  waits for the unlock instead of closing at every start.
+- **Large battery percentage** (Settings → Home): swaps km and percentage.
 
 #### 0.2.0
 
