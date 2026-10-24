@@ -4,6 +4,11 @@
 
 **Ultima versione / Latest version: [0.2.2](releases/MG4Launcher-SWI132-0.2.2.apk)** · 🧪 **sperimentale / experimental**
 
+> 🌡️ **Nuovo: [MG4 Clima](https://github.com/ernestomicco2026-cell/HVAC-Clima-MG4)** — la schermata del clima in stile Tesla, per SWI68, SWI69, SWI132 e SWI133. Con MG4 Clima installato il tasto del clima del launcher apre direttamente quella.
+>
+> 🌡️ **New: [MG4 Clima](https://github.com/ernestomicco2026-cell/HVAC-Clima-MG4)** — the Tesla-style climate screen, for SWI68, SWI69, SWI132 and SWI133. With MG4 Clima installed the launcher's climate button opens it directly.
+
+
 <a href="https://www.paypal.com/pool/9tv7fQ36nA?sr=wccr"><img alt="Sostieni il progetto con PayPal · Support the project with PayPal" src="https://img.shields.io/badge/Sostieni%20il%20progetto-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white"></a>
 
 > ⚠️ **Compatibilità / Compatibility:** solo infotainment **SWI132 (MG4 MY24)** · only **SWI132 (MG4 MY24)** infotainment.
