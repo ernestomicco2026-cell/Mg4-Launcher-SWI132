@@ -2,7 +2,7 @@
 
 🇮🇹 [Italiano](#italiano) · 🇬🇧 [English](#english)
 
-**Ultima versione / Latest version: [0.2.1](releases/MG4Launcher-SWI132-0.2.1.apk)** · 🧪 **sperimentale / experimental**
+**Ultima versione / Latest version: [0.2.2](releases/MG4Launcher-SWI132-0.2.2.apk)** · 🧪 **sperimentale / experimental**
 
 <a href="https://www.paypal.com/pool/9tv7fQ36nA?sr=wccr"><img alt="Sostieni il progetto con PayPal · Support the project with PayPal" src="https://img.shields.io/badge/Sostieni%20il%20progetto-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white"></a>
 
@@ -173,7 +173,7 @@ Ci sono due modi per installarlo: da chiavetta USB, se riesci ad aprire un file 
 
 Serve poter aprire un file manager sull'infotainment.
 
-1. Copia `MG4Launcher-SWI132-0.2.1.apk` su una chiavetta USB formattata **FAT32** o **exFAT**.
+1. Copia `MG4Launcher-SWI132-0.2.2.apk` su una chiavetta USB formattata **FAT32** o **exFAT**.
 2. Inserisci la chiavetta nell'auto, apri il file manager e tocca l'APK.
 3. Se Android avvisa che non può installare app da questa fonte: tocca **Impostazioni**, attiva
    **Consenti da questa fonte** per il file manager e torna indietro.
@@ -190,7 +190,7 @@ Il firmware MG può bloccare l'installazione normale delle app: l'opzione `-f` l
 
 1. Installa:
    ```bash
-   adb install -r -f MG4Launcher-SWI132-0.2.1.apk
+   adb install -r -f MG4Launcher-SWI132-0.2.2.apk
    ```
 2. Rendilo la home predefinita:
    ```bash
@@ -257,6 +257,11 @@ Insieme al log, scrivi in una [segnalazione](https://github.com/ernestomicco2026
 ricarica, clima, fendinebbia, radio, media, CarPlay / Android Auto, telecamere) e la revisione del software.
 
 ### Versioni
+
+#### 0.2.2
+- **Tasto del clima**: se è installato [MG4 Clima](https://github.com/ernestomicco2026-cell/HVAC-Clima-MG4) apre
+  direttamente quello (la nuova schermata del clima in stile Tesla), senza far vedere per un istante il clima originale.
+  Senza MG4 Clima tutto resta come prima.
 
 #### 0.2.1
 - **La home si apre da sola all'accensione**: dai log di questa versione la home MG arriva spesso *dopo* il launcher
@@ -418,7 +423,7 @@ There are two ways to install it: from a USB stick, if you can open a file manag
 
 You need to be able to open a file manager on the infotainment.
 
-1. Copy `MG4Launcher-SWI132-0.2.1.apk` to a USB stick formatted as **FAT32** or **exFAT**.
+1. Copy `MG4Launcher-SWI132-0.2.2.apk` to a USB stick formatted as **FAT32** or **exFAT**.
 2. Plug it into the car, open the file manager and tap the APK.
 3. If Android says it cannot install apps from this source: tap **Settings**, enable
    **Allow from this source** for the file manager and go back.
@@ -434,7 +439,7 @@ The MG firmware may block normal app installs; the `-f` option allows it.
 
 1. Install it:
    ```bash
-   adb install -r -f MG4Launcher-SWI132-0.2.1.apk
+   adb install -r -f MG4Launcher-SWI132-0.2.2.apk
    ```
 2. Make it the default home:
    ```bash
@@ -485,6 +490,11 @@ Together with the log, describe in an [issue](https://github.com/ernestomicco202
 charging, climate, fog lights, radio, media, CarPlay / Android Auto, cameras) and your software revision.
 
 ### Changelog
+
+#### 0.2.2
+- **Climate button**: if [MG4 Clima](https://github.com/ernestomicco2026-cell/HVAC-Clima-MG4) is installed it opens it
+  directly (the new Tesla-style climate screen), without briefly showing the original climate. Without MG4 Clima
+  everything stays as before.
 
 #### 0.2.1
 - **The home opens by itself at start-up**: the logs of this version show the MG home often arriving *after* the
