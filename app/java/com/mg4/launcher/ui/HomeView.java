@@ -1560,7 +1560,7 @@ public final class HomeView extends LinearLayout {
         bar.addView(projBtn);
         bar.addView(shortcut(c, R.drawable.ic_phone, L.s(R.string.app_phone), com.mg4.launcher.apps.MgApps.PHONE_PKG, com.mg4.launcher.apps.MgApps.PHONE_CLS));
         if (!big) bar.addView(shortcut(c, R.drawable.ic_radio, L.s(R.string.src_radio), com.mg4.launcher.apps.MgApps.RADIO_PKG, com.mg4.launcher.apps.MgApps.RADIO_CLS));
-        bar.addView(shortcut(c, 0, L.s(R.string.app_camera), "com.saicmotor.evs", null));
+        // SWI132 (MG4 standard MY24): nessuna telecamera 360°, il pulsante è stato tolto (correzione per firmware)
         if (!big) bar.addView(shortcut(c, R.drawable.ic_gear, L.s(R.string.app_settings), com.mg4.launcher.apps.MgApps.SETTINGS_PKG, com.mg4.launcher.apps.MgApps.SETTINGS_CLS));
         // le app si aprono scorrendo la home verso sinistra: niente pulsante dedicato
         if (rhd) mirrorRow(bar);

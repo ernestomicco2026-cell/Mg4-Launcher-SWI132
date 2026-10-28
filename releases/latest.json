@@ -1,6 +1,6 @@
 {
-  "version": "0.2.6",
-  "apk": "releases/MG4Launcher-SWI132-0.2.6.apk",
-  "size": 622996,
-  "notes": "Avvio sicuro: il launcher diventa la home del sistema e parte sempre all'accensione; avvio più affidabile; loghi di Australia e Sud America e paese scritto a mano; CarPlay/Android Auto con un tocco e icona nella barra."
+  "version": "0.2.7",
+  "apk": "releases/MG4Launcher-SWI132-0.2.7.apk",
+  "size": 631340,
+  "notes": "Dimensione separata per la schermata App (icone e testo più grandi). Il log del dongle registra se ricompare dopo il reset. Certificati di sicurezza Sectigo/USERTrust aggiunti. Tolto il pulsante 360° (non presente su questa auto)."
 }
