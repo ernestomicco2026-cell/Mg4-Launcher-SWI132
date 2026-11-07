@@ -37,6 +37,46 @@ public final class Confirm {
         root.addView(dim, new FrameLayout.LayoutParams(-1, -1));
     }
 
+    /**
+     * 0.3.1: avviso con il pulsante OK e, se action non è null, un secondo pulsante (es. Aggiorna). Entrambi chiudono e
+     * chiamano il loro comando (onOk anche null).
+     */
+    public static void message(FrameLayout root, Theme t, String title, String msg, String ok, Runnable onOk, String action, Runnable onAction) {
+        Context c = root.getContext();
+        FrameLayout dim = new FrameLayout(c);
+        dim.setBackgroundColor(t.day ? 0x66000000 : 0xB3000000);
+        dim.setClickable(true);
+        LinearLayout card = Ui.column(c);
+        card.setBackground(Ui.round(t.panel, Ui.dp(c, 28)));
+        card.setPadding(Ui.dp(c, 40), Ui.dp(c, 34), Ui.dp(c, 40), Ui.dp(c, 30));
+        card.setClickable(true);
+        card.addView(Ui.text(c, title, 30, t.text, Ui.MEDIUM));
+        TextView m = Ui.text(c, msg, 21, t.text, Ui.REGULAR);
+        m.setLineSpacing(0, 1.15f);
+        android.widget.ScrollView sv = new android.widget.ScrollView(c);
+        sv.setVerticalScrollBarEnabled(false);
+        sv.addView(m);
+        card.addView(sv, Ui.margins(new LinearLayout.LayoutParams(-1, -2), 0, Ui.dp(c, 16), 0, 0));
+        LinearLayout btns = Ui.row(c);
+        btns.setGravity(Gravity.END);
+        btns.addView(button(c, t, ok, action == null, v -> {
+            ((ViewGroup) dim.getParent()).removeView(dim);
+            if (onOk != null) onOk.run();
+        }), Ui.lp(-2, Ui.tp(c, 60)));
+        if (action != null) {
+            btns.addView(button(c, t, action, true, v -> {
+                ((ViewGroup) dim.getParent()).removeView(dim);
+                if (onAction != null) onAction.run();
+            }), Ui.margins(Ui.lp(-2, Ui.tp(c, 60)), Ui.dp(c, 12), 0, 0, 0));
+        }
+        card.addView(btns, Ui.margins(new LinearLayout.LayoutParams(-1, -2), 0, Ui.dp(c, 28), 0, 0));
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(Ui.dp(c, 980), -2, Gravity.CENTER);
+        lp.topMargin = Ui.dp(c, 30);
+        lp.bottomMargin = Ui.dp(c, 30);
+        dim.addView(card, lp);
+        root.addView(dim, new FrameLayout.LayoutParams(-1, -1));
+    }
+
     public interface OnText {
         void text(String value);
     }

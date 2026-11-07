@@ -69,9 +69,27 @@ public final class CarFeatures {
         return rhd;
     }
 
+    /**
+     * 0.3.1: la spia è stata vista davvero (servizio di accessibilità) sopra il launcher: da qui in poi la home lascia
+     * sempre libero l'angolo, anche se la configurazione dell'auto non lo dice. Vale dalla prossima costruzione della home.
+     */
+    public static synchronized void markSystemLightSeen(Context c) {
+        android.content.SharedPreferences sp = c.getApplicationContext().getSharedPreferences("mg4launcher", Context.MODE_PRIVATE);
+        if (!sp.getBoolean("spiaLuciVista", false)) {
+            sp.edit().putBoolean("spiaLuciVista", true).apply();
+            Diag.put("auto.config.spiaLuciVista", "sì: la home lascerà libero l'angolo dalla prossima apertura");
+        }
+        indicator = true;
+    }
+
     /** La barra di sistema disegna sempre la spia luci in alto a sinistra? */
     public static synchronized boolean hasSystemLightIndicator(Context c) {
         if (indicator != null) return indicator;
+        if (c.getApplicationContext().getSharedPreferences("mg4launcher", Context.MODE_PRIVATE).getBoolean("spiaLuciVista", false)) {
+            indicator = true;
+            Diag.put("auto.config.spiaLuci", "sì (vista sopra il launcher)");
+            return true;
+        }
         String rear = feature(c, "systemui_state_rearfog__");
         String rearNew = feature(c, "systemui_state_rearfognew__");
         String front = feature(c, "systemui_state_frontfog__");

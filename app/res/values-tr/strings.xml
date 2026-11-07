@@ -395,4 +395,27 @@
     <string name="news_v040_2" formatted="false">Fiziksel Home tuşu artık başlatıcıda açık tüm popup\'ları kapatıyor</string>
     <string name="news_v040_3" formatted="false">Çubukta ve Klima/Konfor popuplarında yeni iklim simgeleri (ISO stili), gerçek sirkülasyon durumuyla</string>
     <string name="news_v040_4" formatted="false">Ayarlar daha fazla bölüme yeniden düzenlendi; yapılandırılabilir 360 düğmesi (orijinal, MG4 360, başka bir uygulama veya gizli); daha büyük Android Auto/CarPlay Aç düğmesi</string>
+    <string name="mode_auto" formatted="false">Otomatik</string>
+    <string name="cb_scheduled" formatted="false">Zamanlı</string>
+    <string name="cb_scheduled_title" formatted="false">Zamanlı şarj</string>
+    <string name="cb_scheduled_on_msg">Zamanlı şarj açılsın mı (%1$s–%2$s)? Saatler Enerji uygulamasından değiştirilir.</string>
+    <string name="cb_scheduled_off_msg">Zamanlı şarj kapatılsın mı (%1$s–%2$s)? Araç takıldığı anda şarj olur.</string>
+    <string name="cb_scheduled_turn_on" formatted="false">Aç</string>
+    <string name="cb_scheduled_turn_off" formatted="false">Kapat</string>
+    <string name="set_inside_dashes" formatted="false">Dış sıcaklığın altında; araç vermiyorsa \"--\"</string>
+    <string name="set_charge_limit" formatted="false">Şarj sınırı</string>
+    <string name="set_charge_limit_sub" formatted="false">Batarya çubuğunda ve şarj düğmelerinde. Otomatik: yalnızca araç destekliyorsa</string>
+    <string name="set_comfort" formatted="false">Koltuk ve direksiyon ısıtma</string>
+    <string name="set_comfort_sub" formatted="false">Otomatik: araç yapılandırmasına göre. Varsa ama görünmüyorsa Göster\'i seçin</string>
+    <string name="set_quick_button" formatted="false">Sağ üst düğme</string>
+    <string name="set_quick_button_sub" formatted="false">\"Hiçbiri\" seçilirse medya kaynakları her zaman adıyla görünür</string>
+    <string name="quick_none" formatted="false">Hiçbiri</string>
+    <string name="set_reverse_return" formatted="false">Geri vitesten sonra önceki uygulamaya dön</string>
+    <string name="set_reverse_return_sub" formatted="false">Kameralar kapanınca CarPlay, Android Auto (kutu ile de) veya navigasyon yeniden açılır</string>
+    <string name="notice_title" formatted="false">Duyuru</string>
+    <string name="notice_title_important" formatted="false">Önemli duyuru</string>
+    <string name="news_v031_1" formatted="false">Gerçekten çalışan otomatik gündüz/gece teması: konuma göre gün doğumu ve batımı ile farlar; çizili araçta farlar yanar</string>
+    <string name="news_v031_2" formatted="false">Geri vitesten sonra CarPlay/Android Auto\'ya dönülür (kutu ile de); açılışta son ses kaynağı devam eder, Bluetooth daha güvenilir</string>
+    <string name="news_v031_3" formatted="false">Radyo altında FM/DAB bandı, daha büyük lastik basıncı, kamera simgesi yerine \"360°\", sağ üst düğme seçilebilir</string>
+    <string name="news_v031_4" formatted="false">Koltuk/direksiyon ısıtma ve şarj sınırı: Otomatik, Göster veya Gizle; destekleniyorsa zamanlı şarj; güncellemeler otomatik kontrol edilir</string>
 </resources>

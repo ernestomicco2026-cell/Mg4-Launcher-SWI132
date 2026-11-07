@@ -364,4 +364,51 @@ public final class Prefs {
     public void setCam360(String v) {
         sp.edit().putString("tasto360", v == null ? "" : v).apply();
     }
+
+    // --- 0.3.1 ---
+
+    /** Dopo la retromarcia torna all'app che c'era prima (CarPlay, Android Auto, navigatore...). Attiva di default. */
+    public boolean reverseReturn() {
+        return sp.getBoolean("retroRitorno", true);
+    }
+
+    public void setReverseReturn(boolean b) {
+        sp.edit().putBoolean("retroRitorno", b).apply();
+    }
+
+    /** Limite di ricarica / riscaldamento sedili e volante: "auto" (come l'auto), "show", "hide". */
+    public static final String SHOW_AUTO = "auto", SHOW_ON = "show", SHOW_OFF = "hide";
+
+    private String showMode(String key) {
+        String v = sp.getString(key, SHOW_AUTO);
+        return SHOW_ON.equals(v) || SHOW_OFF.equals(v) ? v : SHOW_AUTO;
+    }
+
+    public String chargeLimitMode() {
+        return showMode("limiteRicarica");
+    }
+
+    public void setChargeLimitMode(String v) {
+        sp.edit().putString("limiteRicarica", v).apply();
+    }
+
+    public String comfortMode() {
+        return showMode("riscaldamento");
+    }
+
+    public void setComfortMode(String v) {
+        sp.edit().putString("riscaldamento", v).apply();
+    }
+
+    /** Pulsante rapido in alto a destra: "proj" Android Auto/CarPlay (predefinito, com'era), "none", "app:<pacchetto>". */
+    public static final String QUICK_PROJ = "proj", QUICK_NONE = "none", QUICK_APP = "app:";
+
+    public String quickButton() {
+        String v = sp.getString("pulsanteRapido", QUICK_PROJ);
+        return QUICK_NONE.equals(v) || v.startsWith(QUICK_APP) ? v : QUICK_PROJ;
+    }
+
+    public void setQuickButton(String v) {
+        sp.edit().putString("pulsanteRapido", v == null ? QUICK_PROJ : v).apply();
+    }
 }

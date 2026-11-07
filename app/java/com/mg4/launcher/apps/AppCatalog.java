@@ -320,9 +320,9 @@ public final class AppCatalog {
         spm = pm;
         Intent mg4 = climaOverride(pkg);
         if (mg4 != null) return mg4;
-        Intent exact = new Intent(Intent.ACTION_MAIN).setComponent(new ComponentName(pkg, cls));
+        Intent exact = cls == null ? null : new Intent(Intent.ACTION_MAIN).setComponent(new ComponentName(pkg, cls));
         try {
-            if (cls != null && pm.resolveActivity(exact, 0) != null) return exact;
+            if (exact != null && pm.resolveActivity(exact, 0) != null) return exact;
         } catch (Exception ignored) {
         }
         Intent li = null;

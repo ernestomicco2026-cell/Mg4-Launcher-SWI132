@@ -395,4 +395,27 @@
     <string name="news_v040_2" formatted="false">Fizyczny przycisk Home zamyka teraz wszystkie otwarte wyskakujące okna w launcherze</string>
     <string name="news_v040_3" formatted="false">Nowe ikony klimatyzacji (styl ISO) na pasku i w wyskakujących oknach Klimatyzacja/Komfort, z rzeczywistym stanem recyrkulacji</string>
     <string name="news_v040_4" formatted="false">Ustawienia podzielone na więcej sekcji; konfigurowalny przycisk 360 (oryginalny, MG4 360, inna aplikacja lub skryty); większy przycisk Otwórz dla Android Auto/CarPlay</string>
+    <string name="mode_auto" formatted="false">Automatycznie</string>
+    <string name="cb_scheduled" formatted="false">Zaplanowane</string>
+    <string name="cb_scheduled_title" formatted="false">Ładowanie zaplanowane</string>
+    <string name="cb_scheduled_on_msg">Włączyć ładowanie zaplanowane (%1$s–%2$s)? Godziny zmienia się w aplikacji Energia.</string>
+    <string name="cb_scheduled_off_msg">Wyłączyć ładowanie zaplanowane (%1$s–%2$s)? Samochód zacznie ładować od razu po podłączeniu.</string>
+    <string name="cb_scheduled_turn_on" formatted="false">Włącz</string>
+    <string name="cb_scheduled_turn_off" formatted="false">Wyłącz</string>
+    <string name="set_inside_dashes" formatted="false">Pod temperaturą zewnętrzną; \"--\", jeśli samochód jej nie podaje</string>
+    <string name="set_charge_limit" formatted="false">Limit ładowania</string>
+    <string name="set_charge_limit_sub" formatted="false">Na pasku baterii i wśród przycisków ładowania. Automatycznie: tylko jeśli samochód go obsługuje</string>
+    <string name="set_comfort" formatted="false">Podgrzewanie foteli i kierownicy</string>
+    <string name="set_comfort_sub" formatted="false">Automatycznie: według konfiguracji samochodu. Jeśli masz, a nie widać, wybierz Pokaż</string>
+    <string name="set_quick_button" formatted="false">Przycisk w prawym górnym rogu</string>
+    <string name="set_quick_button_sub" formatted="false">Przy \"Brak\" źródła multimediów zawsze mają swoją nazwę</string>
+    <string name="quick_none" formatted="false">Brak</string>
+    <string name="set_reverse_return" formatted="false">Po cofaniu wróć do poprzedniej aplikacji</string>
+    <string name="set_reverse_return_sub" formatted="false">CarPlay, Android Auto (także przez box) lub nawigacja otwierają się ponownie po zamknięciu kamer</string>
+    <string name="notice_title" formatted="false">Komunikat</string>
+    <string name="notice_title_important" formatted="false">Ważny komunikat</string>
+    <string name="news_v031_1" formatted="false">Automatyczny motyw dzień/noc, który naprawdę działa: wschód i zachód słońca według położenia i światła samochodu; narysowany samochód ma włączone światła</string>
+    <string name="news_v031_2" formatted="false">Po cofaniu wraca CarPlay/Android Auto (także przez box); po uruchomieniu wraca ostatnie źródło dźwięku, a Bluetooth działa pewniej</string>
+    <string name="news_v031_3" formatted="false">Pasmo FM/DAB pod Radiem, większe ciśnienie opon, \"360°\" zamiast ikony kamery, przycisk w prawym górnym rogu do wyboru</string>
+    <string name="news_v031_4" formatted="false">Podgrzewanie foteli/kierownicy i limit ładowania: Automatycznie, Pokaż lub Ukryj; ładowanie zaplanowane, jeśli samochód je obsługuje; aktualizacje sprawdzane same</string>
 </resources>

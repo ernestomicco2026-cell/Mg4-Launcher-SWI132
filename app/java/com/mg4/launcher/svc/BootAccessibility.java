@@ -179,6 +179,7 @@ public final class BootAccessibility extends AccessibilityService {
         started = true;
         StartGuard.a11yConnected = true;
         Diag.put("avvio.accessibilita", "attivo");
+        ReverseReturn.init(this, null);
         HomeMode.checkExpiry(this);
         StartGuard.openWindow(this, "accensione");
         // la home MG potrebbe essere già in primo piano
@@ -259,8 +260,14 @@ public final class BootAccessibility extends AccessibilityService {
         lastProbe = now;
         try {
             java.util.List<android.view.accessibility.AccessibilityWindowInfo> ws = getWindows();
-            StringBuilder sb = new StringBuilder("launcher in primo piano · finestre: ").append(ws == null ? 0 : ws.size());
+            // 0.3.1 (punto 2): la finestra in alto è la barra di stato della SystemUI SAIC (TYPE_STATUS_BAR, 1920×80, senza
+            // modo per nasconderla: non segue i flag di schermo intero già usati dal launcher). Coprirla con una nostra finestra
+            // di sistema nasconderebbe anche lo stato del fendinebbia e resterebbe sopra le altre app se il launcher si chiude
+            // male: si lascia libero l'angolo della spia e la home si adatta (CarFeatures.hasSystemLightIndicator).
+            StringBuilder sb = new StringBuilder("soluzione: angolo della spia lasciato libero · launcher in primo piano · finestre: ")
+                    .append(ws == null ? 0 : ws.size());
             int sys = 0;
+            boolean lampSeen = false;
             if (ws != null) {
                 for (android.view.accessibility.AccessibilityWindowInfo w : ws) {
                     android.view.accessibility.AccessibilityNodeInfo r = w.getRoot();
@@ -270,15 +277,28 @@ public final class BootAccessibility extends AccessibilityService {
                         sys++;
                         android.graphics.Rect b = new android.graphics.Rect();
                         w.getBoundsInScreen(b);
-                        boolean fog = !r.findAccessibilityNodeInfosByViewId("com.android.systemui:id/iv_car_lamp").isEmpty();   // vista mIvRearFog di StatusBarView
+                        java.util.List<android.view.accessibility.AccessibilityNodeInfo> lamps =
+                                r.findAccessibilityNodeInfosByViewId("com.android.systemui:id/iv_car_lamp");   // vista mIvRearFog di StatusBarView
+                        boolean fog = !lamps.isEmpty();
+                        String lampInfo = "";
+                        for (android.view.accessibility.AccessibilityNodeInfo n : lamps) {
+                            android.graphics.Rect lb = new android.graphics.Rect();
+                            n.getBoundsInScreen(lb);
+                            boolean vis = n.isVisibleToUser();
+                            if (vis) lampSeen = true;
+                            lampInfo += " · spia " + lb.toShortString() + (vis ? " visibile" : " nascosta");
+                            n.recycle();
+                        }
                         sb.append(" | systemui tipo ").append(w.getType()).append(" layer ").append(w.getLayer())
-                                .append(" ").append(b.toShortString()).append(fog ? " · contiene il tasto fendinebbia (iv_car_lamp)" : "");
+                                .append(" ").append(b.toShortString()).append(fog ? " · contiene il tasto fendinebbia (iv_car_lamp)" + lampInfo : "");
                     } finally {
                         r.recycle();
                     }
                 }
             }
             sb.append(sys == 0 ? " | nessuna finestra SystemUI visibile" : "");
+            if (lampSeen) CarFeatures.markSystemLightSeen(this);
+            sb.append(" · spazio in home per la spia ").append(CarFeatures.hasSystemLightIndicator(this) ? "sì" : "no");
             Diag.put("luci.pulsanteSistema", sb.toString());
         } catch (Throwable t) {
             Diag.error("luci.pulsanteSistema", t.toString());

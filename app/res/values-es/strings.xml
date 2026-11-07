@@ -395,4 +395,27 @@
     <string name="news_v040_2" formatted="false">El botón Home físico ahora cierra todos los popups abiertos en el launcher</string>
     <string name="news_v040_3" formatted="false">Nuevos iconos de clima (estilo ISO) en la barra y en los popups Clima/Confort, con el estado real de recirculación</string>
     <string name="news_v040_4" formatted="false">Ajustes reorganizados en más secciones; botón 360 configurable (original, MG4 360, otra app u oculto); botón Abrir de Android Auto/CarPlay más grande</string>
+    <string name="mode_auto" formatted="false">Automático</string>
+    <string name="cb_scheduled" formatted="false">Programada</string>
+    <string name="cb_scheduled_title" formatted="false">Carga programada</string>
+    <string name="cb_scheduled_on_msg">¿Activar la carga programada (%1$s–%2$s)? Los horarios se cambian en la app Energía.</string>
+    <string name="cb_scheduled_off_msg">¿Desactivar la carga programada (%1$s–%2$s)? El coche cargará en cuanto se conecte.</string>
+    <string name="cb_scheduled_turn_on" formatted="false">Activar</string>
+    <string name="cb_scheduled_turn_off" formatted="false">Desactivar</string>
+    <string name="set_inside_dashes" formatted="false">Debajo de la exterior; \"--\" si el coche no la proporciona</string>
+    <string name="set_charge_limit" formatted="false">Límite de carga</string>
+    <string name="set_charge_limit_sub" formatted="false">En la barra de la batería y entre los botones de carga. Automático: solo si el coche lo admite</string>
+    <string name="set_comfort" formatted="false">Calefacción de asientos y volante</string>
+    <string name="set_comfort_sub" formatted="false">Automático: según la configuración del coche. Si lo tienes pero no aparece, elige Mostrar</string>
+    <string name="set_quick_button" formatted="false">Botón arriba a la derecha</string>
+    <string name="set_quick_button_sub" formatted="false">Con \"Ninguno\" las fuentes multimedia siempre muestran su nombre</string>
+    <string name="quick_none" formatted="false">Ninguno</string>
+    <string name="set_reverse_return" formatted="false">Tras la marcha atrás, volver a la app anterior</string>
+    <string name="set_reverse_return_sub" formatted="false">CarPlay, Android Auto (también por box) o el navegador se reabren al cerrarse las cámaras</string>
+    <string name="notice_title" formatted="false">Aviso</string>
+    <string name="notice_title_important" formatted="false">Aviso importante</string>
+    <string name="news_v031_1" formatted="false">Tema día/noche automático que funciona de verdad: amanecer y atardecer según la posición y los faros; el coche dibujado enciende los faros</string>
+    <string name="news_v031_2" formatted="false">Tras la marcha atrás se vuelve a CarPlay/Android Auto (también por box); al arrancar vuelve la última fuente de audio y el Bluetooth es más fiable</string>
+    <string name="news_v031_3" formatted="false">Banda FM/DAB bajo la Radio, presión de neumáticos más grande, \"360°\" en lugar del icono de la cámara, botón superior derecho a elegir</string>
+    <string name="news_v031_4" formatted="false">Calefacción de asientos/volante y límite de carga: Automático, Mostrar u Ocultar; carga programada si el coche la admite; actualizaciones comprobadas solas</string>
 </resources>

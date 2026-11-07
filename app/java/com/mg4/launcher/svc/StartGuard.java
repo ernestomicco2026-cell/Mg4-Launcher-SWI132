@@ -179,6 +179,7 @@ public final class StartGuard {
      */
     public static synchronized void onForeground(Context c, String pkg, String cls, boolean anytime) {
         if (pkg == null) return;
+        ReverseReturn.onForeground(c, pkg, cls);
         String prev = prevPkg;
         if (!pkg.equals(prevPkg)) prevPkg = pkg;
         if (anytime && !windowOpen() && BootWatcher.MG_HOME.equals(pkg) && isMgMain(pkg, cls)) {
@@ -265,6 +266,12 @@ public final class StartGuard {
             return;
         }
         String origin = prev.startsWith("com.saicmotor.") || prev.startsWith("com.saic.") ? "altro (" + prev + ")" : "tasto";
+        // 0.3.1 (punto 5): la home MG ricompare quando si chiudono le telecamere dopo la retromarcia; se c'era un'app da
+        // riaprire (CarPlay, Android Auto...) si riapre quella invece del launcher
+        if (ReverseReturn.onMgHomeAfterCamera(c)) {
+            Diag.put("home.tasto", "home MG dopo le telecamere: riaperta l'app di prima (origine: " + origin + ")");
+            return;
+        }
         HomeMode.openOurs(c);
         Diag.put("home.tasto", "home MG sostituita (origine: " + origin + ")");
     }

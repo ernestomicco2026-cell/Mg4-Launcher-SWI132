@@ -75,20 +75,57 @@ public final class Pager extends ViewGroup {
         page = p;
         float target = p * getWidth();
         if (anim != null) anim.cancel();
+        final int newPage = p;
         if (!animate || getWidth() == 0) {
             offset = target;
             apply();
+            if (changedPage && listener != null) listener.onPageChanged(newPage);
         } else {
+            // 0.3.1: animazione più morbida. Le pagine si disegnano su un livello hardware durante lo scorrimento (niente
+            // ridisegno a ogni fotogramma) e il ricaricamento delle app parte solo alla fine, non durante l'animazione.
+            // Durata in base alla distanza da percorrere: dopo un trascinamento resta poco da fare.
+            float dist = Math.abs(target - offset) / Math.max(1f, getWidth());
             anim = ValueAnimator.ofFloat(offset, target);
-            anim.setDuration(260);
-            anim.setInterpolator(new DecelerateInterpolator(1.6f));
+            anim.setDuration(Math.max(120, Math.round(240 * Math.min(1f, dist))));
+            anim.setInterpolator(new DecelerateInterpolator(1.8f));
             anim.addUpdateListener(a -> {
                 offset = (float) a.getAnimatedValue();
                 apply();
             });
+            anim.addListener(new android.animation.AnimatorListenerAdapter() {
+                boolean cancelled;
+
+                @Override
+                public void onAnimationStart(android.animation.Animator a) {
+                    layers(true);
+                }
+
+                @Override
+                public void onAnimationCancel(android.animation.Animator a) {
+                    cancelled = true;
+                    layers(false);
+                }
+
+                @Override
+                public void onAnimationEnd(android.animation.Animator a) {
+                    layers(false);
+                    if (changedPage && listener != null) listener.onPageChanged(newPage);
+                }
+            });
             anim.start();
         }
-        if (changedPage && listener != null) listener.onPageChanged(p);
+    }
+
+    /** Livello hardware sulle pagine durante l'animazione (si toglie subito dopo, per non tenere memoria occupata). */
+    private void layers(boolean on) {
+        for (int i = 0; i < getChildCount(); i++) {
+            View v = getChildAt(i);
+            int type = on ? View.LAYER_TYPE_HARDWARE : View.LAYER_TYPE_NONE;
+            if (v.getLayerType() != type) {
+                v.setLayerType(type, null);
+                if (on) v.buildLayer();
+            }
+        }
     }
 
     @Override

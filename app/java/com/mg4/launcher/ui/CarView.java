@@ -40,6 +40,10 @@ public final class CarView extends View {
     private final Paint rimPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
     private final Paint rimShade = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rimDst = new RectF();
+    /** 0.3.1: fari accesi sul disegno (anabbaglianti o luci di posizione); false = auto disegnata come prima. */
+    private boolean lights;
+    private final Paint lampPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final android.graphics.Path lampPath = new android.graphics.Path();
 
     public CarView(Context c) {
         super(c);
@@ -92,6 +96,13 @@ public final class CarView extends View {
         invalidate();
     }
 
+    /** Fari accesi (true) o disegno normale (false, anche quando lo stato non si legge). */
+    public void setLights(boolean on) {
+        if (on == lights) return;
+        lights = on;
+        invalidate();
+    }
+
     @Override
     protected void onDraw(Canvas c) {
         int w = getWidth(), h = getHeight();
@@ -119,6 +130,51 @@ public final class CarView extends View {
         c.drawBitmap(highlight, null, dst, hlLayer);
         c.drawBitmap(base, null, dst, plain);
         drawWheels(c, s, dst.left, dst.top);
+        if (lights) drawLights(c, s, dst.left, dst.top);
+    }
+
+    /**
+     * Fari della foto (car_base 763×287, muso a sinistra): proiettore anteriore acceso con un fascio morbido davanti
+     * all'auto e fanale posteriore rosso. Solo gradienti (niente sfocature software), leggero per la RAM dell'auto.
+     */
+    private void drawLights(Canvas c, float s, float left, float top) {
+        float hx = left + 62 * s, hy = top + 136 * s;
+        // fascio davanti all'auto
+        lampPath.reset();
+        lampPath.moveTo(left + 26 * s, top + 146 * s);
+        lampPath.lineTo(left - 150 * s, top + 118 * s);
+        lampPath.lineTo(left - 150 * s, top + 228 * s);
+        lampPath.close();
+        lampPaint.setShader(new android.graphics.LinearGradient(left + 26 * s, 0, left - 150 * s, 0, 0x66FFF6DC, 0x00FFF6DC, Shader.TileMode.CLAMP));
+        c.drawPath(lampPath, lampPaint);
+        // alone del proiettore
+        lampPaint.setShader(new RadialGradient(hx, hy, 58 * s, 0xCCFFF8E6, 0x00FFF8E6, Shader.TileMode.CLAMP));
+        c.save();
+        c.scale(1f, 0.45f, hx, hy);
+        c.drawCircle(hx, hy, 58 * s, lampPaint);
+        c.restore();
+        // vetro del proiettore (forma della foto)
+        lampPath.reset();
+        lampPath.moveTo(left + 24 * s, top + 151 * s);
+        lampPath.lineTo(left + 46 * s, top + 139 * s);
+        lampPath.lineTo(left + 76 * s, top + 127 * s);
+        lampPath.lineTo(left + 102 * s, top + 121 * s);
+        lampPath.lineTo(left + 99 * s, top + 127 * s);
+        lampPath.lineTo(left + 74 * s, top + 136 * s);
+        lampPath.lineTo(left + 46 * s, top + 147 * s);
+        lampPath.lineTo(left + 28 * s, top + 154 * s);
+        lampPath.close();
+        lampPaint.setShader(null);
+        lampPaint.setColor(0xEEFFFBF0);
+        c.drawPath(lampPath, lampPaint);
+        // fanale posteriore
+        float tx = left + 716 * s, ty = top + 92 * s;
+        lampPaint.setShader(new RadialGradient(tx, ty, 34 * s, 0xAAFF2A2A, 0x00FF2A2A, Shader.TileMode.CLAMP));
+        c.save();
+        c.scale(1f, 0.7f, tx, ty);
+        c.drawCircle(tx, ty, 34 * s, lampPaint);
+        c.restore();
+        lampPaint.setShader(null);
     }
 
     private void drawWheels(Canvas c, float s, float left, float top) {

@@ -395,4 +395,27 @@
     <string name="news_v040_2" formatted="false">The physical Home button now closes every popup open on the launcher</string>
     <string name="news_v040_3" formatted="false">New climate icons (ISO style) in the bar and in the Climate/Comfort popups, with the real recirculation state</string>
     <string name="news_v040_4" formatted="false">Settings reorganized into more sections; configurable 360 button (original, MG4 360, another app or hidden); bigger Android Auto/CarPlay Open button</string>
+    <string name="mode_auto" formatted="false">Automatic</string>
+    <string name="cb_scheduled" formatted="false">Scheduled</string>
+    <string name="cb_scheduled_title" formatted="false">Scheduled charging</string>
+    <string name="cb_scheduled_on_msg">Turn on scheduled charging (%1$s–%2$s)? The times are changed in the Energy app.</string>
+    <string name="cb_scheduled_off_msg">Turn off scheduled charging (%1$s–%2$s)? The car will charge as soon as it is plugged in.</string>
+    <string name="cb_scheduled_turn_on" formatted="false">Turn on</string>
+    <string name="cb_scheduled_turn_off" formatted="false">Turn off</string>
+    <string name="set_inside_dashes" formatted="false">Below the outside one; \"--\" if the car doesn\'t provide it</string>
+    <string name="set_charge_limit" formatted="false">Charge limit</string>
+    <string name="set_charge_limit_sub" formatted="false">On the battery bar and among the charging buttons. Automatic: only if the car supports it</string>
+    <string name="set_comfort" formatted="false">Seat and steering wheel heating</string>
+    <string name="set_comfort_sub" formatted="false">Automatic: as the car\'s configuration says. If you have it but it doesn\'t appear, choose Show</string>
+    <string name="set_quick_button" formatted="false">Top-right button</string>
+    <string name="set_quick_button_sub" formatted="false">With \"None\" the media sources always keep their label</string>
+    <string name="quick_none" formatted="false">None</string>
+    <string name="set_reverse_return" formatted="false">After reversing, go back to the previous app</string>
+    <string name="set_reverse_return_sub" formatted="false">CarPlay, Android Auto (also via box) or the navigator reopen when the cameras close</string>
+    <string name="notice_title" formatted="false">Notice</string>
+    <string name="notice_title_important" formatted="false">Important notice</string>
+    <string name="news_v031_1" formatted="false">Automatic day/night theme that really works: sunrise and sunset from your position and the car\'s headlights; the drawn car shows its headlights on</string>
+    <string name="news_v031_2" formatted="false">After reversing you go back to CarPlay/Android Auto (also via box); at start-up the last audio source resumes and Bluetooth is more reliable</string>
+    <string name="news_v031_3" formatted="false">FM/DAB band under Radio, bigger tyre pressures, \"360°\" instead of the camera icon, top-right button of your choice</string>
+    <string name="news_v031_4" formatted="false">Seat/steering wheel heating and charge limit: Automatic, Show or Hide; scheduled charging if the car supports it; updates checked automatically</string>
 </resources>

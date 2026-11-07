@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-<a href="releases/MG4Launcher-SWI132-0.3.0.apk"><img alt="Scarica / Download 0.3.0" src="https://img.shields.io/badge/Scarica%20%2F%20Download-0.3.0-2ea44f?style=for-the-badge&logo=android&logoColor=white"></a>
+<a href="releases/MG4Launcher-SWI132-0.3.1.apk"><img alt="Scarica / Download 0.3.1" src="https://img.shields.io/badge/Scarica%20%2F%20Download-0.3.1-2ea44f?style=for-the-badge&logo=android&logoColor=white"></a>
 <a href="https://paypal.me/ErnestoMicco?locale.x=it_IT&country.x=IT"><img alt="Sostieni il progetto con PayPal · Support the project with PayPal" src="https://img.shields.io/badge/Sostieni%20%2F%20Support-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white"></a> <img alt="sperimentale / experimental" src="https://img.shields.io/badge/sperimentale%20%2F%20experimental-orange?style=for-the-badge">
 </p>
 
@@ -186,7 +186,7 @@ Ci sono due modi per installarlo: da chiavetta USB, se riesci ad aprire un file 
 
 Serve poter aprire un file manager sull'infotainment.
 
-1. Copia `MG4Launcher-SWI132-0.3.0.apk` su una chiavetta USB formattata **FAT32** o **exFAT**.
+1. Copia `MG4Launcher-SWI132-0.3.1.apk` su una chiavetta USB formattata **FAT32** o **exFAT**.
 2. Inserisci la chiavetta nell'auto, apri il file manager e tocca l'APK.
 3. Se Android avvisa che non può installare app da questa fonte: tocca **Impostazioni**, attiva
    **Consenti da questa fonte** per il file manager e torna indietro.
@@ -203,7 +203,7 @@ Il firmware MG può bloccare l'installazione normale delle app: l'opzione `-f` l
 
 1. Installa:
    ```bash
-   adb install -r -f MG4Launcher-SWI132-0.3.0.apk
+   adb install -r -f MG4Launcher-SWI132-0.3.1.apk
    ```
 2. Rendilo la home predefinita:
    ```bash
@@ -227,6 +227,12 @@ Serve che l'auto sia collegata a internet (connettività dell'auto o hotspot del
 Gli aggiornamenti arrivano solo da questo repository: una versione per un altro software non viene mai proposta.
 Se prima avevi installato la versione SWI69, il launcher passa da solo a questo repository.
 Si possono installare anche da computer, con lo stesso comando dell'installazione.
+
+**Controllo automatico (dalla 0.3.1).** Il launcher controlla da solo se c'è una versione nuova: 2 minuti dopo
+l'accensione e poi ogni 6 ore. Se la trova mostra un avviso discreto con il pulsante **Aggiorna**. Può anche mostrare
+avvisi importanti (per esempio "aggiorna subito, questa versione ha un problema") e, quando serve davvero, installare da
+solo una correzione urgente, ma solo ad auto ferma e solo con un APK firmato come quello installato. Tutto arriva solo
+da questo repository.
 
 ### Tornare alla home MG originale
 
@@ -280,6 +286,36 @@ Anche solo **2 €** sono un aiuto prezioso per continuare a sviluppare e provar
 [![Offrimi un caffè con PayPal](https://img.shields.io/badge/Offrimi%20un%20caff%C3%A8-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/ErnestoMicco?locale.x=it_IT&country.x=IT)
 
 ### Versioni
+
+#### 0.3.1
+- **Tema giorno/notte automatico**: ora scatta davvero. Il sistema dell'auto non cambia mai giorno/notte, quindi il
+  launcher usa l'alba e il tramonto calcolati dalla posizione (senza internet) e, intorno al tramonto e all'alba, i fari
+  dell'auto. Il cambio avviene dopo un minuto di valore stabile; la scelta manuale ha sempre la precedenza.
+- **Fari sull'auto disegnata**: con anabbaglianti o luci di posizione accesi, sul disegno si accendono i fari.
+- **Ritorno dopo la retromarcia**: chiuse le telecamere, si torna all'app di prima (CarPlay, Android Auto, anche da box,
+  o navigatore). Nuova opzione "Dopo la retromarcia torna all'app di prima", attiva di default.
+- **Sorgente audio all'accensione**: riparte l'ultima sorgente usata davvero (Bluetooth, radio, USB, CarPlay/Android
+  Auto); se il telefono non è collegato si passa alla radio. La radio parte davvero anche col tasto Play.
+- **Radio non pronta**: il launcher riprova da solo dopo 1, 2 e 4 secondi.
+- **Bluetooth**: passaggio alla sorgente più affidabile (nuovi tentativi prima di aprire l'app Media) e copertina del
+  brano nella card media, se il telefono la manda.
+- **Banda FM/DAB sotto la Radio**: più piccola e collegata al pulsante Radio, si vede solo con la radio. I comandi
+  play/avanti/indietro hanno più spazio.
+- **Pulsante in alto a destra**: si sceglie nelle impostazioni (Android Auto/CarPlay, un'app, nessuno). Con "Nessuno"
+  le sorgenti media restano sempre con la loro scritta.
+- **Temperature**: quella esterna è più compatta, a sinistra, solo numero e unità. Quella interna (opzione) mostra "--"
+  se l'auto non la fornisce, mai l'esterna al suo posto.
+- **Pressione gomme** senza le scritte Anteriori/Posteriori e con numeri più grandi.
+- **"360°"** al posto dell'icona della telecamera, ovunque compaia; Video USB ha ora l'icona della pellicola.
+- **Riscaldamento sedili e volante**: nuova scelta Automatico/Mostra/Nascondi. Ogni comando viene riletto dall'auto
+  dopo un secondo e, se non ha avuto effetto, il pulsante torna allo stato reale.
+- **Limite di ricarica**: nuova scelta Automatico/Mostra/Nascondi (Automatico = solo se l'auto lo supporta).
+- **Ricarica programmata**: nuovo pulsante tra quelli di ricarica, solo se l'auto la supporta (attiva/spegne; gli orari
+  si cambiano nell'app Energia).
+- **Animazione** più fluida tra la home e la schermata App.
+- **Aggiornamenti**: controllo automatico all'accensione e ogni 6 ore, pulsante Aggiorna anche nella home, avvisi
+  importanti da remoto e aggiornamento urgente solo ad auto ferma.
+- **Spia luci di sistema**: se la spia compare sopra il launcher, la home le lascia sempre libero l'angolo.
 
 #### 0.3.0
 - **Sblocca presa di ricarica**: nuovo pulsante sempre visibile nella barra di ricarica (con conferma; mostra
@@ -534,7 +570,7 @@ There are two ways to install it: from a USB stick, if you can open a file manag
 
 You need to be able to open a file manager on the infotainment.
 
-1. Copy `MG4Launcher-SWI132-0.3.0.apk` to a USB stick formatted as **FAT32** or **exFAT**.
+1. Copy `MG4Launcher-SWI132-0.3.1.apk` to a USB stick formatted as **FAT32** or **exFAT**.
 2. Plug it into the car, open the file manager and tap the APK.
 3. If Android says it cannot install apps from this source: tap **Settings**, enable
    **Allow from this source** for the file manager and go back.
@@ -550,7 +586,7 @@ The MG firmware may block normal app installs; the `-f` option allows it.
 
 1. Install it:
    ```bash
-   adb install -r -f MG4Launcher-SWI132-0.3.0.apk
+   adb install -r -f MG4Launcher-SWI132-0.3.1.apk
    ```
 2. Make it the default home:
    ```bash
@@ -573,6 +609,12 @@ If a newer version exists, **Install** appears (also at the bottom of the settin
 The car needs an internet connection (car connectivity or phone hotspot). Updates come only from this repository:
 a build for another software is never offered. If you had installed the SWI69 version before, the launcher switches
 to this repository by itself.
+
+**Automatic check (since 0.3.1).** The launcher checks for a new version by itself: 2 minutes after start-up and then
+every 6 hours. If it finds one it shows a discreet notice with an **Update** button. It can also show important notices
+(for example "update now, this version has a problem") and, when really needed, install an urgent fix by itself, but
+only while the car is stopped and only with an APK signed like the installed one. Everything comes only from this
+repository.
 
 ### Going back to the original MG home
 
@@ -625,6 +667,36 @@ Even just **€2** is a great help to keep developing and testing new versions i
 [![Buy me a coffee with PayPal](https://img.shields.io/badge/Buy%20me%20a%20coffee-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/ErnestoMicco?locale.x=it_IT&country.x=IT)
 
 ### Changelog
+
+#### 0.3.1
+- **Automatic day/night theme**: it now really switches. The car's system never changes day/night, so the launcher
+  uses sunrise and sunset worked out from your position (no internet needed) and, around sunset and sunrise, the car's
+  headlights. The switch happens after one minute of a stable value; a manual choice always wins.
+- **Headlights on the drawn car**: with dipped beams or side lights on, the drawing shows the headlights on.
+- **Back after reversing**: when the cameras close you go back to the previous app (CarPlay, Android Auto, also via a
+  box, or the navigator). New option "After reversing, go back to the previous app", on by default.
+- **Audio source at start-up**: the last source really used comes back (Bluetooth, radio, USB, CarPlay/Android Auto);
+  if the phone isn't connected it falls back to the radio. The radio really starts with the Play button too.
+- **Radio not ready**: the launcher retries by itself after 1, 2 and 4 seconds.
+- **Bluetooth**: more reliable switch to the source (new attempts before opening the Media app) and track artwork in the
+  media card, if the phone sends it.
+- **FM/DAB band under Radio**: smaller and attached to the Radio button, shown only with the radio. Play/next/previous
+  get more room.
+- **Top-right button**: chosen in the settings (Android Auto/CarPlay, an app, none). With "None" the media sources
+  always keep their label.
+- **Temperatures**: the outside one is more compact, on the left, number and unit only. The inside one (option) shows
+  "--" if the car doesn't provide it, never the outside value instead.
+- **Tyre pressures** without the Front/Rear labels and with bigger numbers.
+- **"360°"** instead of the camera icon wherever it appears; USB video now has a film strip icon.
+- **Seat and steering wheel heating**: new Automatic/Show/Hide choice. Every command is read back from the car after a
+  second and, if it had no effect, the button returns to the real state.
+- **Charge limit**: new Automatic/Show/Hide choice (Automatic = only if the car supports it).
+- **Scheduled charging**: new button among the charging ones, only if the car supports it (on/off; the times are
+  changed in the Energy app).
+- **Smoother animation** between the home and the Apps screen.
+- **Updates**: automatic check at start-up and every 6 hours, Update button on the home too, important remote notices
+  and urgent updates only while the car is stopped.
+- **System light indicator**: if the indicator appears over the launcher, the home always keeps its corner free.
 
 #### 0.3.0
 - **Unlock charging socket**: new always-visible button in the charging bar (with confirmation; shows

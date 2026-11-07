@@ -44,6 +44,8 @@ public final class Updater {
         public boolean newer;
         boolean raw;                // file del repository (API contents) invece di allegato di release
         String repo = "", path = "";  // per il download di riserva da raw.githubusercontent.com
+        /** 0.3.1: versione minima (latest.json, campo facoltativo): sotto questa l'aggiornamento è forzato. */
+        public String minima = "";
     }
 
     public interface Listener {
@@ -200,6 +202,243 @@ public final class Updater {
         });
     }
 
+    // =============================================================================================
+    // 0.3.1 (punto 11): controllo automatico, aggiornamento forzato ("minima") e avvisi da remoto
+    // Solo indirizzi HTTPS del repository del launcher (raw.githubusercontent.com/<repo SWI132>/main/releases/...).
+    // =============================================================================================
+
+    private static final String OWN_RAW = "https://raw.githubusercontent.com/" + com.mg4.launcher.ui.Prefs.DEFAULT_REPO + "/main/";
+    private static final int MAX_FORCED_ATTEMPTS = 3;
+
+    /** Un avviso di releases/avvisi.json. */
+    public static final class Notice {
+        public String id = "", text = "";
+        public boolean important, updateButton;
+    }
+
+    public interface AutoResult {
+        /** Sul thread principale. r = null se latest.json non si legge; notices vuoto se avvisi.json manca. */
+        void onAuto(Release r, java.util.List<Notice> notices);
+    }
+
+    private android.content.SharedPreferences sp() {
+        return ctx.getSharedPreferences("aggiornamenti", Context.MODE_PRIVATE);
+    }
+
+    private String lastAuto = "—";
+
+    /** Controllo automatico (all'accensione dopo 2 minuti e ogni 6 ore): latest.json e avvisi.json, in background. */
+    public void checkAuto(String lang, AutoResult cb) {
+        if (!Offline.canTry()) {
+            status("aggiornamento.stato", "offline: rimandato");
+            return;
+        }
+        bg.post(() -> {
+            Release r = null;
+            String err = "";
+            try {
+                HttpURLConnection c = open(OWN_RAW + "releases/latest.json", "", "*/*");
+                if (c.getResponseCode() == 200) {
+                    JSONObject o = new JSONObject(readAll(c.getInputStream()));
+                    r = new Release();
+                    r.tag = o.optString("version", "");
+                    r.name = "MG4 Launcher " + r.tag;
+                    r.notes = o.optString("notes", "");
+                    r.minima = o.optString("minima", "");
+                    String apk = o.optString("apk", "");
+                    if (apk.matches("releases/[A-Za-z0-9._-]+\\.apk")) {
+                        r.apkUrl = "https://api.github.com/repos/" + com.mg4.launcher.ui.Prefs.DEFAULT_REPO + "/contents/" + apk;
+                        r.apkName = apk.substring(apk.lastIndexOf('/') + 1);
+                        r.apkSize = o.optLong("size");
+                        r.raw = true;
+                        r.repo = com.mg4.launcher.ui.Prefs.DEFAULT_REPO;
+                        r.path = apk;
+                    }
+                    r.newer = compare(r.tag, currentVersion()) > 0;
+                } else {
+                    err = "latest.json HTTP " + c.getResponseCode();
+                }
+                c.disconnect();
+                Offline.ok();
+            } catch (Exception e) {
+                err = e.getClass().getSimpleName();
+                Offline.failed("aggiornamenti", e);
+            }
+            java.util.List<Notice> notices = readNotices(lang);
+            lastAuto = new java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.ITALY).format(new java.util.Date());
+            Release fr = r;
+            if (r == null) statusLine("non letto (" + err + ")", null);
+            else statusLine(r.newer ? "versione nuova" : "già aggiornato", r);
+            main.post(() -> cb.onAuto(fr, notices));
+        });
+    }
+
+    private void status(String key, String v) {
+        Diag.put(key, v);
+    }
+
+    /** aggiornamento.stato: ultimo controllo, versione trovata, minima, esito, tentativi. */
+    public void statusLine(String esito, Release r) {
+        String v = r == null ? "?" : r.tag;
+        String min = r == null || r.minima.isEmpty() ? "nessuna" : r.minima;
+        int tries = r == null || r.minima.isEmpty() ? 0 : sp().getInt("forzato." + r.tag, 0);
+        Diag.put("aggiornamento.stato", "ultimo controllo " + lastAuto + " · installata " + currentVersion() + " · trovata " + v
+                + " · minima " + min + " · " + esito + " · tentativi forzati " + tries + "/" + MAX_FORCED_ATTEMPTS);
+    }
+
+    /** True se la versione installata è più vecchia della minima di questa release. */
+    public boolean belowMinimum(Release r) {
+        return r != null && !r.minima.isEmpty() && compare(currentVersion(), r.minima) < 0 && r.apkUrl != null;
+    }
+
+    /** Tentativi di installazione forzata ancora possibili per questa versione. */
+    public boolean forcedAttemptsLeft(Release r) {
+        return r != null && sp().getInt("forzato." + r.tag, 0) < MAX_FORCED_ATTEMPTS;
+    }
+
+    /**
+     * Aggiornamento forzato, solo ad auto ferma (lo controlla chi chiama). Scarica l'APK dal repository, controlla che la
+     * dimensione sia quella di latest.json e che sia firmato con la stessa chiave del launcher installato, poi installa.
+     * Al massimo 3 tentativi per versione.
+     */
+    public void installForced(Release r) {
+        if (busy || r == null || r.apkUrl == null) return;
+        if (HomeMode.officina(ctx)) {
+            statusLine("forzato sospeso (modalità officina)", r);
+            return;
+        }
+        int tries = sp().getInt("forzato." + r.tag, 0);
+        if (tries >= MAX_FORCED_ATTEMPTS) {
+            statusLine("forzato: " + MAX_FORCED_ATTEMPTS + " tentativi falliti, mi fermo", r);
+            return;
+        }
+        sp().edit().putInt("forzato." + r.tag, tries + 1).apply();
+        statusLine("forzato: scaricamento (tentativo " + (tries + 1) + ")", r);
+        status(L.f(R.string.upd_downloading, r.apkName), r, true);
+        bg.post(() -> {
+            try {
+                // solo raw.githubusercontent.com del repository del launcher (percorso già controllato: releases/*.apk)
+                byte[] apk = download(OWN_RAW + r.path, r, "", "application/octet-stream");
+                if (!isApk(apk)) throw new IOException("file non valido (" + apk.length + " byte)");
+                if (r.apkSize > 0 && apk.length != r.apkSize) throw new IOException("dimensione " + apk.length + " invece di " + r.apkSize);
+                String sig = sameSignature(apk);
+                if (sig != null) throw new IOException(sig);
+                statusLine("forzato: installazione (tentativo " + (tries + 1) + ")", r);
+                status(L.f(R.string.upd_installing, r.tag), r, true);
+                installApk(apk);
+            } catch (Exception e) {
+                status(L.f(R.string.upd_install_failed, describe(e)), r, false);
+                statusLine("forzato NON riuscito: " + describe(e), r);
+            }
+        });
+    }
+
+    /** null se l'APK è firmato con la stessa chiave del launcher installato, altrimenti il motivo. */
+    @SuppressWarnings("deprecation")
+    private String sameSignature(byte[] apk) {
+        File f = new File(ctx.getCacheDir(), "update-forced.apk");
+        try {
+            try (OutputStream os = new FileOutputStream(f)) {
+                os.write(apk);
+            }
+            PackageManager pm = ctx.getPackageManager();
+            PackageInfo theirs = pm.getPackageArchiveInfo(f.getPath(), PackageManager.GET_SIGNATURES);
+            PackageInfo mine = pm.getPackageInfo(ctx.getPackageName(), PackageManager.GET_SIGNATURES);
+            if (theirs == null || theirs.signatures == null || theirs.signatures.length == 0) return "firma non leggibile";
+            if (!ctx.getPackageName().equals(theirs.packageName)) return "pacchetto diverso (" + theirs.packageName + ")";
+            if (mine.signatures == null || mine.signatures.length != theirs.signatures.length) return "firma diversa";
+            for (int i = 0; i < mine.signatures.length; i++) {
+                if (!mine.signatures[i].equals(theirs.signatures[i])) return "firma diversa";
+            }
+            return null;
+        } catch (Exception e) {
+            return "controllo firma non riuscito: " + e.getClass().getSimpleName();
+        } finally {
+            f.delete();
+        }
+    }
+
+    /** releases/avvisi.json del repository; avvisi per questa versione, testo nella lingua del launcher (riserva inglese). */
+    private java.util.List<Notice> readNotices(String lang) {
+        java.util.List<Notice> out = new java.util.ArrayList<>();
+        StringBuilder ids = new StringBuilder();
+        try {
+            HttpURLConnection c = open(OWN_RAW + "releases/avvisi.json", "", "*/*");
+            if (c.getResponseCode() != 200) {
+                c.disconnect();
+                noticeStatus("file assente (HTTP " + c.getResponseCode() + ")");
+                return out;
+            }
+            JSONObject o = new JSONObject(readAll(c.getInputStream()));
+            c.disconnect();
+            JSONArray arr = o.optJSONArray("avvisi");
+            String mine = currentVersion();
+            for (int i = 0; arr != null && i < arr.length(); i++) {
+                JSONObject a = arr.optJSONObject(i);
+                if (a == null) continue;
+                String id = a.optString("id", "");
+                if (id.isEmpty()) continue;
+                JSONArray vers = a.optJSONArray("versioni");
+                boolean match = vers == null || vers.length() == 0;
+                for (int k = 0; vers != null && k < vers.length(); k++) if (mine.equals(vers.optString(k))) match = true;
+                ids.append(ids.length() == 0 ? "" : ", ").append(id).append(match ? "" : " (non per " + mine + ")");
+                if (!match) continue;
+                JSONObject tx = a.optJSONObject("testo");
+                String text = tx == null ? "" : tx.optString(lang, tx.optString("en", ""));
+                if (text.isEmpty()) continue;
+                Notice n = new Notice();
+                n.id = id;
+                n.text = text;
+                n.important = a.optBoolean("importante", false);
+                n.updateButton = "aggiorna".equals(a.optString("pulsante", ""));
+                out.add(n);
+            }
+            noticeStatus("letti: " + (ids.length() == 0 ? "nessuno" : ids));
+        } catch (Exception e) {
+            noticeStatus("non letto (" + e.getClass().getSimpleName() + ")");
+        }
+        return out;
+    }
+
+    private String noticeRead = "—";
+
+    private void noticeStatus(String read) {
+        noticeRead = read;
+        noticeDiag();
+    }
+
+    /** Avviso da mostrare adesso? Una volta sola; quelli importanti a ogni accensione finché non si preme OK. */
+    public boolean shouldShow(Notice n, boolean newBoot) {
+        android.content.SharedPreferences p = sp();
+        if (p.getBoolean("avviso.ok." + n.id, false)) return false;
+        if (!p.getBoolean("avviso.visto." + n.id, false)) return true;
+        return n.important && newBoot;
+    }
+
+    public void noticeShown(Notice n) {
+        sp().edit().putBoolean("avviso.visto." + n.id, true).apply();
+        appendNotice("mostrati", n.id);
+    }
+
+    public void noticeConfirmed(Notice n) {
+        sp().edit().putBoolean("avviso.ok." + n.id, true).apply();
+        appendNotice("confermati", n.id);
+    }
+
+    private void appendNotice(String key, String id) {
+        android.content.SharedPreferences p = sp();
+        String cur = p.getString("avvisi." + key, "");
+        if (!(("," + cur + ",").contains("," + id + ","))) p.edit().putString("avvisi." + key, cur.isEmpty() ? id : cur + "," + id).apply();
+        noticeDiag();
+    }
+
+    private void noticeDiag() {
+        android.content.SharedPreferences p = sp();
+        String shown = p.getString("avvisi.mostrati", ""), ok = p.getString("avvisi.confermati", "");
+        Diag.put("avvisi.stato", "id " + noticeRead + " · mostrati " + (shown.isEmpty() ? "nessuno" : shown)
+                + " · confermati " + (ok.isEmpty() ? "nessuno" : ok));
+    }
+
     private static boolean isApk(byte[] b) {
         return b != null && b.length >= 1024 && b[0] == 'P' && b[1] == 'K';
     }
@@ -320,6 +559,7 @@ public final class Updater {
         r.tag = o.optString("version", "");
         r.name = "MG4 Launcher " + r.tag;
         r.notes = o.optString("notes", "");
+        r.minima = o.optString("minima", "");
         String apk = o.optString("apk", "");
         if (!apk.isEmpty()) {
             r.apkUrl = base + apk;

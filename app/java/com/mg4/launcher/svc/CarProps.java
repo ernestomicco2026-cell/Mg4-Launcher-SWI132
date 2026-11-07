@@ -38,6 +38,8 @@ public final class CarProps {
 
     /** Velocità del veicolo (FLOAT, m/s) e permesso che la protegge. */
     public static final int PERF_VEHICLE_SPEED = 291504647;
+    /** 0.3.1: marcia selezionata (VehicleProperty.GEAR_SELECTION) e valore della P (VehicleGear.GEAR_PARK). */
+    public static final int GEAR_SELECTION = 289408000, GEAR_PARK = 4;
     public static final String PERM_CAR_SPEED = "android.car.permission.CAR_SPEED";
 
     public CarProps(Context c) {

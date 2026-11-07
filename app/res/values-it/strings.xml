@@ -395,4 +395,27 @@
     <string name="news_v040_2" formatted="false">Il tasto Home fisico chiude ora tutti i popup aperti sul launcher</string>
     <string name="news_v040_3" formatted="false">Nuove icone del clima (stile ISO) nella barra e nei popup Clima/Comfort, con stato del ricircolo reale</string>
     <string name="news_v040_4" formatted="false">Impostazioni riorganizzate in più sezioni; tasto 360 configurabile (originale, MG4 360, un\'altra app o nascosto); pulsante Apri di Android Auto/CarPlay più grande</string>
+    <string name="mode_auto" formatted="false">Automatico</string>
+    <string name="cb_scheduled" formatted="false">Programmata</string>
+    <string name="cb_scheduled_title" formatted="false">Ricarica programmata</string>
+    <string name="cb_scheduled_on_msg">Attivare la ricarica programmata (%1$s–%2$s)? Gli orari si cambiano nell\'app Energia.</string>
+    <string name="cb_scheduled_off_msg">Spegnere la ricarica programmata (%1$s–%2$s)? L\'auto caricherà appena collegata.</string>
+    <string name="cb_scheduled_turn_on" formatted="false">Attiva</string>
+    <string name="cb_scheduled_turn_off" formatted="false">Spegni</string>
+    <string name="set_inside_dashes" formatted="false">Sotto quella esterna; \"--\" se l\'auto non la fornisce</string>
+    <string name="set_charge_limit" formatted="false">Limite di ricarica</string>
+    <string name="set_charge_limit_sub" formatted="false">Sulla barra della batteria e tra i pulsanti di ricarica. Automatico: solo se l\'auto lo supporta</string>
+    <string name="set_comfort" formatted="false">Riscaldamento sedili e volante</string>
+    <string name="set_comfort_sub" formatted="false">Automatico: come la configurazione dell\'auto. Se ce l\'hai ma non compare, scegli Mostra</string>
+    <string name="set_quick_button" formatted="false">Pulsante in alto a destra</string>
+    <string name="set_quick_button_sub" formatted="false">Con \"Nessuno\" le sorgenti media restano sempre con la loro scritta</string>
+    <string name="quick_none" formatted="false">Nessuno</string>
+    <string name="set_reverse_return" formatted="false">Dopo la retromarcia torna all\'app di prima</string>
+    <string name="set_reverse_return_sub" formatted="false">CarPlay, Android Auto (anche da box) o navigatore si riaprono quando si chiudono le telecamere</string>
+    <string name="notice_title" formatted="false">Avviso</string>
+    <string name="notice_title_important" formatted="false">Avviso importante</string>
+    <string name="news_v031_1" formatted="false">Tema giorno/notte automatico che funziona davvero: alba e tramonto calcolati dalla posizione e fari dell\'auto; sull\'auto disegnata si accendono i fari</string>
+    <string name="news_v031_2" formatted="false">Dopo la retromarcia si torna a CarPlay/Android Auto (anche da box); all\'accensione riparte l\'ultima sorgente audio e il Bluetooth è più affidabile</string>
+    <string name="news_v031_3" formatted="false">Banda FM/DAB sotto la Radio, pressione gomme più grande, \"360°\" al posto dell\'icona della telecamera, pulsante in alto a destra a scelta</string>
+    <string name="news_v031_4" formatted="false">Riscaldamento sedili e volante e limite di ricarica: Automatico, Mostra o Nascondi; ricarica programmata se l\'auto la supporta; aggiornamenti controllati da soli</string>
 </resources>

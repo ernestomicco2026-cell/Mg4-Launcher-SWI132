@@ -395,4 +395,27 @@
     <string name="news_v040_2" formatted="false">Die physische Home-Taste schließt jetzt alle offenen Popups im Launcher</string>
     <string name="news_v040_3" formatted="false">Neue Klimasymbole (ISO-Stil) in der Leiste und in den Klima-/Komfort-Popups, mit dem echten Umluft-Status</string>
     <string name="news_v040_4" formatted="false">Einstellungen in mehr Abschnitte neu geordnet; konfigurierbare 360-Taste (Original, MG4 360, andere App oder ausgeblendet); größere Öffnen-Taste für Android Auto/CarPlay</string>
+    <string name="mode_auto" formatted="false">Automatisch</string>
+    <string name="cb_scheduled" formatted="false">Geplant</string>
+    <string name="cb_scheduled_title" formatted="false">Geplantes Laden</string>
+    <string name="cb_scheduled_on_msg">Geplantes Laden einschalten (%1$s–%2$s)? Die Zeiten ändern Sie in der Energie-App.</string>
+    <string name="cb_scheduled_off_msg">Geplantes Laden ausschalten (%1$s–%2$s)? Das Auto lädt sofort nach dem Einstecken.</string>
+    <string name="cb_scheduled_turn_on" formatted="false">Einschalten</string>
+    <string name="cb_scheduled_turn_off" formatted="false">Ausschalten</string>
+    <string name="set_inside_dashes" formatted="false">Unter der Außentemperatur; \"--\", wenn das Auto sie nicht liefert</string>
+    <string name="set_charge_limit" formatted="false">Ladelimit</string>
+    <string name="set_charge_limit_sub" formatted="false">Auf dem Batteriebalken und bei den Ladetasten. Automatisch: nur wenn das Auto es unterstützt</string>
+    <string name="set_comfort" formatted="false">Sitz- und Lenkradheizung</string>
+    <string name="set_comfort_sub" formatted="false">Automatisch: laut Fahrzeugkonfiguration. Wenn vorhanden, aber nicht angezeigt, Anzeigen wählen</string>
+    <string name="set_quick_button" formatted="false">Taste oben rechts</string>
+    <string name="set_quick_button_sub" formatted="false">Bei \"Keine\" behalten die Medienquellen immer ihre Beschriftung</string>
+    <string name="quick_none" formatted="false">Keine</string>
+    <string name="set_reverse_return" formatted="false">Nach dem Rückwärtsfahren zur vorherigen App zurück</string>
+    <string name="set_reverse_return_sub" formatted="false">CarPlay, Android Auto (auch per Box) oder das Navi öffnen sich wieder, wenn die Kameras schließen</string>
+    <string name="notice_title" formatted="false">Hinweis</string>
+    <string name="notice_title_important" formatted="false">Wichtiger Hinweis</string>
+    <string name="news_v031_1" formatted="false">Automatisches Tag/Nacht-Design, das wirklich funktioniert: Sonnenauf- und -untergang nach Standort und Scheinwerfer; das gezeichnete Auto zeigt eingeschaltetes Licht</string>
+    <string name="news_v031_2" formatted="false">Nach dem Rückwärtsfahren zurück zu CarPlay/Android Auto (auch per Box); beim Start läuft die letzte Audioquelle weiter, Bluetooth ist zuverlässiger</string>
+    <string name="news_v031_3" formatted="false">FM/DAB-Band unter Radio, größerer Reifendruck, \"360°\" statt Kamerasymbol, Taste oben rechts frei wählbar</string>
+    <string name="news_v031_4" formatted="false">Sitz-/Lenkradheizung und Ladelimit: Automatisch, Anzeigen oder Ausblenden; geplantes Laden, wenn unterstützt; Updates werden automatisch geprüft</string>
 </resources>

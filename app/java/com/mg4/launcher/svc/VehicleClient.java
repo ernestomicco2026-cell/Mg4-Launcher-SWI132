@@ -67,6 +67,9 @@ public final class VehicleClient {
     // fendinebbia, come la schermata dell'auto originale: set(1) = "premuto" (commuta), get 1 = acceso
     private static final String LAMP = "com.saicmotor.carapi.lamp.ICarLampService";
     private static final int LAMP_SET_REAR_FOG = 30, LAMP_GET_REAR_FOG = 31, LAMP_SET_FRONT_FOG = 40, LAMP_GET_FRONT_FOG = 41;
+    // 0.3.1: anabbaglianti, luci di posizione e posizione del comando luci, come la home originale SWI132 (ModeManager:
+    // getDipdBeamLghtStatus / getVehSideLightMode / getLightSwitchPosition, schermata a riposo ScreenOffView)
+    private static final int LAMP_GET_DIPPED = 42, LAMP_GET_SIDE = 43, LAMP_GET_SWITCH = 44;
     private static final String CONFIG = "com.saicmotor.carapi.config.ICarConfigService";
     private static final int CONFIG_FRONT_FOG = 60;   // getFrontFrogConfigData: 0 = fendinebbia anteriori presenti
     // assistenza alla guida, come l'app Impostazioni veicolo originale (SWI69 R45, verificata identica su SWI132 R43)
@@ -90,6 +93,8 @@ public final class VehicleClient {
     private static final int K_ACC_TJA = 80153, K_PEDAL = 80157;
     private static final String IPK = "com.saicmotor.carapi.ipk.ICarIpkService";
     private static final int IPK_TYRE_UNIT = 29;      // 0 bar, 1 kPa, 2 psi (scelta dell'utente sul quadro)
+    // 0.3.1: giorno/notte e luminosità del quadro (solo per la diagnostica tema.candidati: significato non verificato)
+    private static final int IPK_DAY_NIGHT = 23, IPK_DIM_LEVEL = 25;
 
     /** Ventola come la barra del launcher: 0 = clima spento, 1..11, 15 = automatico. */
     public static final int FAN_OFF = 0, FAN_AUTO = 15;
@@ -130,6 +135,15 @@ public final class VehicleClient {
         public int hvacPower = -1;
         public int acOn = -1, autoOn = -1, defrostOn = -1;   // 1 acceso, 0 spento, -1 sconosciuto
         public int seatLeft = -1, seatRight = -1;          // 0..3, -1 non disponibile (dalla configurazione dell'auto)
+        /** 0.3.1: limite di ricarica supportato (lettura valida dal gestore batteria). */
+        public boolean chargeLimitSupported;
+        /** 0.3.1: ricarica programmata (come l'app Energia): -1 non supportata, 0 spenta, 1 attiva; orari "HH:MM". */
+        public int scheduled = -1;
+        public String schedStart = "", schedEnd = "";
+        /** 0.3.1: fari (1 accesi, 0 spenti, -1 non leggibili). */
+        public int headlights = -1;
+        /** 0.3.1: fonte della temperatura interna ("" = nessuna fonte valida). */
+        public String insideSource = "";
         public int wheelHeat = -1;                         // 1 acceso, 0 spento, -1 non disponibile
         public float[] tireBar = {Float.NaN, Float.NaN, Float.NaN, Float.NaN};   // AS, AD, PS, PD
         public float insideTemp = Float.NaN;
@@ -354,6 +368,7 @@ public final class VehicleClient {
         readLamps(s);
         readBms(s, now);
         readCarProps(s);
+        s.headlights = DayNight.headlights();
         last = s;
         main.post(() -> {
             if (listener != null) listener.onVehicleState(s);
@@ -364,6 +379,16 @@ public final class VehicleClient {
 
     /** Unità della pressione scelta sul quadro (per "Automatica"). */
     private void readCluster(State s) {
+        long t = android.os.SystemClock.uptimeMillis();
+        if (t - dayNightAt > 10_000) {
+            dayNightAt = t;
+            try {
+                IBinder ipk = sub(BIND_IPK);
+                if (ipk != null) DayNight.setCluster(Rpc.callInt(ipk, IPK, IPK_DAY_NIGHT), Rpc.callInt(ipk, IPK, IPK_DIM_LEVEL));
+            } catch (Exception e) {
+                DayNight.setCluster(Integer.MIN_VALUE, Integer.MIN_VALUE);
+            }
+        }
         if (clusterUnit != Integer.MIN_VALUE && android.os.SystemClock.uptimeMillis() - clusterAt < 60_000) {
             s.tyreUnitCluster = clusterUnit;
             return;
@@ -382,7 +407,7 @@ public final class VehicleClient {
     }
 
     private int clusterUnit = Integer.MIN_VALUE;
-    private long clusterAt;
+    private long clusterAt, dayNightAt;
 
     /** Gestore batteria: percentuale con decimali, potenza, limite e comandi di ricarica (come l'app Energia). */
     private void readBms(State s, long now) {
@@ -397,7 +422,11 @@ public final class VehicleClient {
         if (code >= 1 && code <= 7) {
             s.chargeLimitCode = code;
             s.chargeLimit = limitPercent(code);
+            s.chargeLimitSupported = true;
         }
+        Diag.put("ricarica.limite", "supportato " + (s.chargeLimitSupported ? "sì" : "no") + " · valore letto " + code
+                + (s.chargeLimit > 0 ? " (" + s.chargeLimit + "%)" : "") + " · scelta " + limitMode);
+        readSchedule(s, now);
         int lim = held(CarBms.CHRG_TRGT_SOC, s.chargeLimitCode, now);
         if (lim >= 1 && lim != s.chargeLimitCode) {
             s.chargeLimitCode = lim;
@@ -426,6 +455,50 @@ public final class VehicleClient {
         Diag.put("ricarica.comandi", "corrente " + cur + " · avvia/ferma " + ctl + " · V2L " + v2x + " · limite V2L " + dl
                 + " · unità " + distUnit);
         Diag.putQuiet("veicolo.correnteA/tensioneV", amps + " / " + volts);
+    }
+
+    /** Scelta dell'utente per il limite di ricarica (Automatico / Mostra / Nascondi), solo per la diagnostica. */
+    public static volatile String limitMode = "auto";
+
+    /** Ricarica programmata: si mostra solo se l'auto risponde con un interruttore valido (1, 2 o 3) e orari validi. */
+    private void readSchedule(State s, long now) {
+        if (now - schedAt < 10_000 && schedCache != null) {
+            s.scheduled = schedCache[0];
+            s.schedStart = schedText[0];
+            s.schedEnd = schedText[1];
+            return;
+        }
+        schedAt = now;
+        int sw = bms.getInt(CarBms.RESV_SWITCH);
+        int sh = bms.getInt(CarBms.RESV_START_H), sm = bms.getInt(CarBms.RESV_START_M);
+        int eh = bms.getInt(CarBms.RESV_END_H), em = bms.getInt(CarBms.RESV_END_M);
+        boolean timesOk = sh >= 0 && sh <= 23 && sm >= 0 && sm <= 59 && eh >= 0 && eh <= 23 && em >= 0 && em <= 59;
+        int st = sw >= 1 && sw <= 3 && timesOk ? (sw == 2 ? 0 : 1) : -1;
+        st = held(CarBms.RESV_SWITCH, st, now);
+        schedCache = new int[]{st};
+        schedText[0] = timesOk ? String.format(java.util.Locale.ROOT, "%02d:%02d", sh, sm) : "";
+        schedText[1] = timesOk ? String.format(java.util.Locale.ROOT, "%02d:%02d", eh, em) : "";
+        s.scheduled = st;
+        s.schedStart = schedText[0];
+        s.schedEnd = schedText[1];
+        Diag.put("ricarica.programmata", (st < 0 ? "non supportata" : st == 1 ? "attiva" : "spenta") + " · interruttore " + sw
+                + " · " + sh + ":" + sm + "–" + eh + ":" + em);
+    }
+
+    private long schedAt;
+    private int[] schedCache;
+    private final String[] schedText = {"", ""};
+
+    /** Attiva o spegne la ricarica programmata (stessi valori dell'app Energia: 1 attiva, 2 spenta). */
+    public void setScheduled(boolean on) {
+        if (bg == null) return;
+        hold(CarBms.RESV_SWITCH, on ? 1 : 0);
+        schedAt = 0;
+        bg.post(() -> {
+            boolean sent = bms.setInt(CarBms.RESV_SWITCH, on ? 1 : 2);
+            Diag.put("ricarica.ultimoComando", "programmata " + (on ? "attiva" : "spenta") + (sent ? " · inviato" : " · non inviato"));
+            poll();
+        });
     }
 
     // ---- TPMS e validità della temperatura esterna dal CarService (0.9.5: la temperatura interna non c'è) ----------------------------------------------
@@ -462,8 +535,43 @@ public final class VehicleClient {
             Diag.put("pneumatici (grezzo AS/AD/PS/PD)", raw);
             // 0.9.3: temperatura esterna, validità (0 valida, 1 non valida)
             outValid = props.getIntQuiet(CarProps.HVAC_TEMPERATURE_OUTCARV);
+            readInside(s.outsideTemp);
         }
         System.arraycopy(tireCache, 0, s.tireBar, 0, 4);
+        s.insideTemp = insideCache;
+        s.insideSource = insideSrc;
+    }
+
+    private volatile float insideCache = Float.NaN;
+    private volatile String insideSrc = "";
+
+    /**
+     * 0.3.1: temperatura interna solo da una fonte valida. Mai l'esterna al posto dell'interna: un valore uguale all'esterna
+     * (HVAC_AMBIENT_TEMPERATURE su queste auto è l'esterna), 0 o fuori scala non vale, e allora si mostra "--".
+     */
+    private void readInside(float outside) {
+        boolean outOk = outside > -60 && outside < 70;
+        String[] names = {"HVAC_TEMPERATURE_CURRENT", "HVAC_AMBIENT_TEMPERATURE"};
+        int[] ids = {CarProps.HVAC_TEMPERATURE_CURRENT, CarProps.HVAC_AMBIENT_TEMPERATURE};
+        StringBuilder d = new StringBuilder();
+        float found = Float.NaN;
+        String src = "";
+        for (int i = 0; i < ids.length; i++) {
+            Boolean av = props.available(ids[i]);
+            float v = Boolean.FALSE.equals(av) ? Float.NaN : props.getFloat(ids[i]);
+            boolean sameAsOut = outOk && !Float.isNaN(v) && Math.abs(v - outside) < 0.6f;
+            boolean ok = valid(v) && !sameAsOut;
+            d.append(i == 0 ? "" : " · ").append(names[i]).append(' ').append(Float.isNaN(v) ? "non leggibile" : String.valueOf(v))
+                    .append(ok ? " valida" : sameAsOut ? " = esterna, scartata" : Float.isNaN(v) ? "" : " non valida");
+            if (ok && src.isEmpty()) {
+                found = v;
+                src = names[i];
+            }
+        }
+        insideCache = found;
+        insideSrc = src;
+        Diag.put("clima.tempInterna", (src.isEmpty() ? "-- (nessuna fonte valida)" : found + " da " + src) + " · esterna "
+                + (outOk ? String.valueOf(outside) : "non valida") + " · " + d);
     }
 
     /** Temperatura interna leggibile? true / false, null finché non si sa (CarService non ancora pronto). */
@@ -502,6 +610,17 @@ public final class VehicleClient {
                 s.hasFrontFog = frontFogConfig == 0;
                 if (s.hasFrontFog) s.frontFog = held(LAMP_GET_FRONT_FOG, Rpc.callInt(l, LAMP, LAMP_GET_FRONT_FOG) == 1 ? 1 : 0, now);
                 Diag.put("luci.fendinebbia ant/post", s.frontFog + " / " + s.rearFog);
+                if (lampsReadable) {
+                    try {
+                        int dp = Rpc.callInt(l, LAMP, LAMP_GET_DIPPED), sd = Rpc.callInt(l, LAMP, LAMP_GET_SIDE), sw = Rpc.callInt(l, LAMP, LAMP_GET_SWITCH);
+                        DayNight.setLamps(dp, sd, sw);
+                        Diag.putQuiet("luci.fari", "anabbaglianti " + dp + " · posizione " + sd + " · comando " + sw + " → "
+                                + (DayNight.headlights() == 1 ? "accesi" : DayNight.headlights() == 0 ? "spenti" : "non letti"));
+                    } catch (Exception e) {
+                        lampsReadable = false;   // servizio senza questi comandi: il disegno resta com'è
+                        Diag.put("luci.fari", "non leggibili: " + e.getClass().getSimpleName());
+                    }
+                }
             }
         } catch (Exception e) {
             Diag.error("luci", e.toString());
@@ -515,6 +634,7 @@ public final class VehicleClient {
         }
     }
 
+    private boolean lampsReadable = true;
     private int lkaConfig = Integer.MIN_VALUE, onePedalConfig = Integer.MIN_VALUE;
     private Boolean vsValid;
 
@@ -778,17 +898,57 @@ public final class VehicleClient {
                     + wheelHeatConfig + " (0 = presente) → sedili " + (hasSeatHeat() ? "sì" : "no") + ", volante " + (hasWheelHeat() ? "sì" : "no"));
         }
         int ls = -1, rs = -1, wh = -1;
-        if (hasSeatHeat()) {
+        // 0.3.1: Automatico = configurazione dell'auto, come l'app Clima originale (le letture rispondono anche sulle auto
+        // senza riscaldamento, quindi la presenza non si decide dalla risposta); Mostra / Nascondi = scelta dell'utente
+        boolean show = "show".equals(comfortMode), hide = "hide".equals(comfortMode);
+        boolean seats = !hide && (show || hasSeatHeat()), wheel = !hide && (show || hasWheelHeat());
+        if (seats) {
             ls = seatLevel(a, SEAT_DRIVER);
             rs = seatLevel(a, SEAT_PASSENGER);
-            s.seatLeft = held(K_SEAT_L, ls >= 0 && ls <= 3 ? ls : -1, now);
-            s.seatRight = held(K_SEAT_R, rs >= 0 && rs <= 3 ? rs : -1, now);
+            s.seatLeft = held(K_SEAT_L, ls >= 0 && ls <= 3 ? ls : show ? 0 : -1, now);
+            s.seatRight = held(K_SEAT_R, rs >= 0 && rs <= 3 ? rs : show ? 0 : -1, now);
         }
-        if (hasWheelHeat()) {
+        if (wheel) {
             wh = Rpc.callInt(a, AC, AC_GET_WHEEL_HEAT);
             s.wheelHeat = held(K_WHEEL, wh == 3 ? 1 : 0, now);
         }
+        lastSeatRead[0] = ls;
+        lastSeatRead[1] = rs;
+        lastSeatRead[2] = wh;
         Diag.put("clima.sedili sx/dx · volante", ls + " / " + rs + " · " + wh);
+        Diag.put("comfort.riscaldamento", "presenza: configurazione auto (modello " + carModelConfig + ", sedili " + seatHeatConfig
+                + ", volante " + wheelHeatConfig + ") → sedili " + (hasSeatHeat() ? "sì" : "no") + ", volante " + (hasWheelHeat() ? "sì" : "no")
+                + " · scelta " + comfortMode + " · letti sx " + ls + " dx " + rs + " volante " + wh + " · ultimo comando " + lastComfortCmd);
+    }
+
+    /** Scelta dell'utente per sedili e volante riscaldati: "auto", "show", "hide" (dalle impostazioni). */
+    public static volatile String comfortMode = "auto";
+    private final int[] lastSeatRead = {-1, -1, -1};
+    private volatile String lastComfortCmd = "nessuno";
+
+    /**
+     * 0.3.1: dopo circa 1 s si rilegge dall'auto; se il valore non è cambiato il pulsante torna allo stato reale e lo si
+     * scrive nella diagnostica.
+     */
+    private void verifyComfort(int key, int seat, int before, String what) {
+        bg.postDelayed(() -> {
+            try {
+                IBinder a = sub(BIND_HVAC);
+                if (a == null) return;
+                int now = seat > 0 ? seatLevel(a, seat) : Rpc.callInt(a, AC, AC_GET_WHEEL_HEAT);
+                boolean changed = now != before;
+                if (!changed) {
+                    synchronized (holds) {
+                        holds.remove(key);
+                    }
+                }
+                lastComfortCmd = what + " · prima " + before + " · riletto " + now + (changed ? " · ok" : " · NON cambiato: pulsante riportato allo stato reale");
+                Diag.put("comfort.riscaldamento.comando", lastComfortCmd);
+            } catch (Exception e) {
+                Diag.error(what, e.toString());
+            }
+            poll();
+        }, 1100);
     }
 
     private boolean hasSeatHeat() {
@@ -824,15 +984,19 @@ public final class VehicleClient {
         if (cur < 0) return;
         hold(key, cur == 0 ? 3 : cur - 1);
         bg.post(() -> {
+            int before = -1;
             try {
                 IBinder a = sub(BIND_HVAC);
-                if (a != null) Rpc.call(a, AC, AC_SWITCH_SEAT_HEAT, p -> p.writeInt(seat));
+                if (a != null) {
+                    before = seatLevel(a, seat);
+                    Rpc.call(a, AC, AC_SWITCH_SEAT_HEAT, p -> p.writeInt(seat));
+                }
                 Diag.put("comando.ultimo", what + " · premuto");
             } catch (Exception e) {
                 Diag.error(what, e.toString());
                 forget(BIND_HVAC);
             }
-            poll();
+            verifyComfort(key, seat, before, what + " premuto");
         });
     }
 
@@ -843,15 +1007,19 @@ public final class VehicleClient {
         if (cur < 0) return;
         hold(K_WHEEL, cur > 0 ? 0 : 1);
         bg.post(() -> {
+            int before = -1;
             try {
                 IBinder a = sub(BIND_HVAC);
-                if (a != null) Rpc.call(a, AC, AC_SET_WHEEL_HEAT, p -> p.writeInt(1));
+                if (a != null) {
+                    before = Rpc.callInt(a, AC, AC_GET_WHEEL_HEAT);
+                    Rpc.call(a, AC, AC_SET_WHEEL_HEAT, p -> p.writeInt(1));
+                }
                 Diag.put("comando.ultimo", "clima.volante · premuto");
             } catch (Exception e) {
                 Diag.error("clima.volante", e.toString());
                 forget(BIND_HVAC);
             }
-            poll();
+            verifyComfort(K_WHEEL, 0, before, "volante premuto");
         });
     }
 
@@ -882,6 +1050,12 @@ public final class VehicleClient {
                     now = seatLevel(a, seat);
                 }
                 Diag.put("comando.ultimo", what + " · livello " + target + " · pressioni " + presses + " · letto " + now);
+                lastComfortCmd = what + " → livello " + target + " · pressioni " + presses + " · riletto " + now + (now == target ? " · ok" : " · NON raggiunto");
+                if (now != target) {
+                    synchronized (holds) {
+                        holds.remove(key);
+                    }
+                }
             } catch (Exception e) {
                 Diag.error(what, e.toString());
                 forget(BIND_HVAC);

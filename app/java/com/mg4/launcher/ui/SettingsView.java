@@ -421,8 +421,21 @@ public final class SettingsView extends FrameLayout {
                         showSection(SEC_HOME);
                     }), false));
         }
-        // temperatura interna (tolta nella 0.9.5): l'auto non la manda allo schermo, si spiega perché
-        card.addView(row(c, L.s(R.string.set_show_inside_temp), L.s(R.string.set_inside_none), spacer0(c), true));
+        // 0.3.1: temperatura interna (spenta di default): "--" se l'auto non la fornisce, mai l'esterna al suo posto
+        card.addView(row(c, L.s(R.string.set_show_inside_temp), L.s(R.string.set_inside_dashes),
+                toggle(c, prefs.showInsideTemp(), on -> {
+                    prefs.setShowInsideTemp(on);
+                    host.settingsChanged(true);
+                }), false));
+        // 0.3.1 (SWI69 #2): limite di ricarica Automatico (solo se l'auto lo supporta) / Mostra / Nascondi
+        String[] showVals = {Prefs.SHOW_AUTO, Prefs.SHOW_ON, Prefs.SHOW_OFF};
+        String[] showNames = {L.s(R.string.mode_auto), L.s(R.string.fog_show), L.s(R.string.fog_hide)};
+        card.addView(row(c, L.s(R.string.set_charge_limit), L.s(R.string.set_charge_limit_sub),
+                choices(c, showNames, java.util.Arrays.asList(showVals).indexOf(prefs.chargeLimitMode()), i -> {
+                    prefs.setChargeLimitMode(showVals[i]);
+                    host.settingsChanged(true);
+                    showSection(SEC_HOME);
+                }), true));
         col.addView(card, topFull(14));
     }
 
@@ -458,6 +471,40 @@ public final class SettingsView extends FrameLayout {
                     prefs.setChargeButtons(on);
                     host.settingsChanged(true);
                 }), false));
+        // 0.3.1 (SWI68 #24): sedili e volante riscaldati Automatico (configurazione dell'auto) / Mostra / Nascondi
+        String[] showVals = {Prefs.SHOW_AUTO, Prefs.SHOW_ON, Prefs.SHOW_OFF};
+        String[] showNames = {L.s(R.string.mode_auto), L.s(R.string.fog_show), L.s(R.string.fog_hide)};
+        card.addView(row(c, L.s(R.string.set_comfort), L.s(R.string.set_comfort_sub),
+                choices(c, showNames, java.util.Arrays.asList(showVals).indexOf(prefs.comfortMode()), i -> {
+                    prefs.setComfortMode(showVals[i]);
+                    host.settingsChanged(true);
+                    showSection(SEC_BAR);
+                }), false));
+        // 0.3.1 (SWI68 #23): pulsante rapido in alto a destra: Android Auto/CarPlay, un'app a scelta, nessuno
+        String quick = prefs.quickButton();
+        boolean quickApp = quick.startsWith(Prefs.QUICK_APP);
+        String quickLabel = quickApp ? Cam360.label(c, quick.substring(Prefs.QUICK_APP.length())) : L.s(R.string.cam360_app);
+        String[] quickNames = {"Android Auto / CarPlay", quickLabel, L.s(R.string.quick_none)};
+        int quickSel = quickApp ? 1 : Prefs.QUICK_NONE.equals(quick) ? 2 : 0;
+        LinearLayout quickRow = Ui.row(c);
+        for (int i = 0; i < quickNames.length; i++) {
+            final int idx = i;
+            boolean on = i == quickSel;
+            TextView ch = choice(c, quickNames[i], on, v -> {
+                if (idx == 1) { pickQuickApp(); return; }
+                if (idx == quickSel) return;
+                prefs.setQuickButton(idx == 0 ? Prefs.QUICK_PROJ : Prefs.QUICK_NONE);
+                host.settingsChanged(true);
+                showSection(SEC_BAR);
+            });
+            ch.setPadding(tp(20), 0, tp(20), 0);
+            if (!on) ch.setBackground(Ui.pressable(c, t.panel, 16 * Ui.K, t));
+            quickRow.addView(ch, Ui.margins(new LinearLayout.LayoutParams(-2, tp(60)), i == 0 ? 0 : dp(8), 0, 0, 0));
+        }
+        card.addView(row(c, L.s(R.string.set_quick_button), L.s(R.string.set_quick_button_sub), quickRow, false));
+        // 0.3.1 (punto 5): dopo la retromarcia torna all'app di prima
+        card.addView(row(c, L.s(R.string.set_reverse_return), L.s(R.string.set_reverse_return_sub),
+                toggle(c, prefs.reverseReturn(), on -> prefs.setReverseReturn(on)), false));
         // 0.4.0 (punto 8): cosa apre il tasto 360
         String cam = prefs.cam360();
         boolean camApp = cam.startsWith(Prefs.CAM_APP);
@@ -481,6 +528,18 @@ public final class SettingsView extends FrameLayout {
         }
         card.addView(row(c, L.s(R.string.set_cam360), L.s(R.string.set_cam360_sub), camRow, true));
         col.addView(card, topFull(14));
+    }
+
+    /** Elenco delle app installate per il pulsante rapido in alto a destra. */
+    private void pickQuickApp() {
+        java.util.List<com.mg4.launcher.apps.AppCatalog.App> apps = host.allLaunchableApps();
+        String[] names = new String[apps.size()];
+        for (int i = 0; i < apps.size(); i++) names[i] = apps.get(i).label;
+        Confirm.pick(this, t, L.s(R.string.cam360_pick_app), "", names, -1, L.s(R.string.btn_cancel), i -> {
+            prefs.setQuickButton(Prefs.QUICK_APP + apps.get(i).packageName);
+            host.settingsChanged(true);
+            showSection(SEC_BAR);
+        });
     }
 
     /** Elenco delle app installate (escluso noi) per scegliere "un'altra app" per il tasto 360. */

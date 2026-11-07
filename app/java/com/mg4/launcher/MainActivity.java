@@ -84,6 +84,7 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
             if (home != null) home.onConn(st);
         });
         media = new MediaClient(this);
+        com.mg4.launcher.svc.ReverseReturn.init(this, media);
         nav = new NavClient(this);
         updater = new Updater(this);
         logs = new com.mg4.launcher.svc.LogUploader(this);
@@ -166,8 +167,10 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
         tf.addAction(Intent.ACTION_TIMEZONE_CHANGED);
         registerReceiver(clockTick, tf);
         root.postDelayed(saveDiag, 15000);
-        // primo controllo aggiornamenti dopo l'avvio, quando la radio ha finito di caricare
-        root.postDelayed(autoCheck, 90_000);
+        // 0.3.1 (punto 11): primo controllo aggiornamenti e avvisi 2 minuti dopo l'avvio (sistema stabile), poi ogni 6 ore
+        root.postDelayed(autoCheck, 120_000);
+        // 0.3.1 (punto 1): giorno/notte ricontrollato ogni 10 s (il cambio si applica dopo 60 s di valore stabile)
+        root.postDelayed(dayNightTick, 10_000);
         root.postDelayed(this::logoPacksTick, 20_000);
     }
 
@@ -200,19 +203,122 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
     private static final long POPUP_SHOW = 20_000;                  // poi si nasconde da solo
     private View updPopup;
 
+    private boolean firstAutoCheck = true;
+    private Updater.Release autoRelease;
+
     private final Runnable autoCheck = new Runnable() {
         @Override
         public void run() {
-            if (prefs.updatePopup() && !com.mg4.launcher.svc.HomeMode.officina(getApplicationContext())) updater.checkQuiet(prefs.updateRepo(), prefs.githubToken(), r -> showUpdatePopup(r));
+            if (!com.mg4.launcher.svc.HomeMode.officina(getApplicationContext())) {
+                boolean newBoot = firstAutoCheck;
+                firstAutoCheck = false;
+                updater.checkAuto(L.resolve(prefs.language()), (r, notices) -> onAutoCheck(r, notices, newBoot));
+            }
             root.postDelayed(this, CHECK_EVERY);
+        }
+    };
+
+    /** Esito del controllo automatico: avviso discreto, aggiornamento forzato ad auto ferma, avvisi da remoto. */
+    private void onAutoCheck(Updater.Release r, java.util.List<Updater.Notice> notices, boolean newBoot) {
+        autoRelease = r;
+        if (r != null && r.newer && r.apkUrl != null) {
+            if (updater.belowMinimum(r) && updater.forcedAttemptsLeft(r)) {
+                tryForced();
+            } else {
+                if (updater.belowMinimum(r)) updater.statusLine("forzato: tentativi esauriti, solo avviso", r);
+                if (prefs.updatePopup()) showUpdatePopup(r, false);
+            }
+        }
+        pendingNotices.clear();
+        for (Updater.Notice n : notices) if (updater.shouldShow(n, newBoot)) pendingNotices.add(n);
+        showNextNotice();
+    }
+
+    private final java.util.ArrayDeque<Updater.Notice> pendingNotices = new java.util.ArrayDeque<>();
+    private boolean noticeOpen;
+
+    private void showNextNotice() {
+        if (noticeOpen || pendingNotices.isEmpty() || isFinishing()) return;
+        Updater.Notice n = pendingNotices.poll();
+        noticeOpen = true;
+        updater.noticeShown(n);
+        boolean canUpdate = n.updateButton;
+        com.mg4.launcher.ui.Confirm.message(root, theme, L.s(n.important ? R.string.notice_title_important : R.string.notice_title), n.text,
+                L.s(R.string.btn_ok), () -> {
+                    noticeOpen = false;
+                    updater.noticeConfirmed(n);
+                    root.postDelayed(this::showNextNotice, 400);
+                }, canUpdate ? L.s(R.string.upd_now) : null, () -> {
+                    noticeOpen = false;
+                    startUpdateFromHome();
+                });
+    }
+
+    /** Pulsante Aggiorna fuori dalle impostazioni (popup della home e avvisi). */
+    private void startUpdateFromHome() {
+        Updater.Release r = autoRelease;
+        SettingsView.openAt(SettingsView.SEC_SYSTEM);
+        closeSettings();
+        openSettings();
+        if (r != null && r.newer && r.apkUrl != null) updater.install(r, prefs.githubToken());
+    }
+
+    /**
+     * Aggiornamento forzato (versione installata sotto "minima"): solo ad auto ferma (velocità 0 o in P). Durante la guida
+     * si riprova ogni minuto; se velocità e marcia non si leggono non si forza e resta solo l'avviso.
+     */
+    private final Runnable forcedRetry = this::tryForced;
+
+    private void tryForced() {
+        Updater.Release r = autoRelease;
+        root.removeCallbacks(forcedRetry);
+        if (r == null || !updater.belowMinimum(r) || !updater.forcedAttemptsLeft(r) || updater.isBusy()) return;
+        Boolean stopped = stoppedForUpdate();
+        if (stopped == null) {
+            updater.statusLine("forzato non possibile: velocità e marcia non leggibili, solo avviso", r);
+            showUpdatePopup(r, true);
+        } else if (!stopped) {
+            updater.statusLine("forzato in attesa: auto in movimento", r);
+            root.postDelayed(forcedRetry, 60_000);
+        } else {
+            updater.installForced(r);
+        }
+    }
+
+    /** Auto ferma? true velocità 0 o marcia P, false in movimento, null se non si legge nulla. */
+    private Boolean stoppedForUpdate() {
+        float v = VehicleClient.speedKmh();
+        int gear = Integer.MIN_VALUE;
+        com.mg4.launcher.svc.CarProps p = VehicleClient.carProps();
+        if (p != null && p.ready()) gear = p.getIntQuiet(com.mg4.launcher.svc.CarProps.GEAR_SELECTION);
+        boolean park = gear == com.mg4.launcher.svc.CarProps.GEAR_PARK;
+        if (park || (!Float.isNaN(v) && v < 1f)) return true;
+        if (!Float.isNaN(v)) return false;
+        return null;
+    }
+
+    /** 0.3.1: giorno/notte ricontrollato ogni 10 s; con il launcher davanti la home si ricostruisce col tema nuovo. */
+    private final Runnable dayNightTick = new Runnable() {
+        @Override
+        public void run() {
+            if (theme != null && !wrongFirmware) {
+                boolean day = Theme.wouldBeDay(MainActivity.this, prefs);
+                Theme.report(MainActivity.this, Prefs.THEME_AUTO.equals(prefs.themeMode()) ? "automatico" : "scelta manuale", theme.day);
+                if (day != theme.day && inFront && settings == null && pager != null && pager.page() == 0 && !noticeOpen) {
+                    Diag.put("tema.cambio", "home ricostruita col tema " + (day ? "giorno" : "notte"));
+                    IconStyler.clearCache();
+                    build();
+                }
+            }
+            root.postDelayed(this, 10_000);
         }
     };
 
     private final Runnable hidePopup = () -> hideUpdatePopup();
 
-    private void showUpdatePopup(Updater.Release r) {
-        if (r == null || updPopup != null || !prefs.updatePopup()) return;
-        if (r.tag.equals(prefs.dismissedUpdate()) || updater.isBusy()) return;
+    private void showUpdatePopup(Updater.Release r, boolean important) {
+        if (r == null || updPopup != null || updater.isBusy()) return;
+        if (!important && (!prefs.updatePopup() || r.tag.equals(prefs.dismissedUpdate()))) return;
         Theme t = theme;
         LinearLayout card = Ui.row(this);
         card.setGravity(Gravity.CENTER_VERTICAL);
@@ -234,10 +340,8 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
         }), Ui.margins(Ui.lp(-2, dp(48)), 0, 0, dp(10), 0));
         card.addView(popupButton(L.s(R.string.upd_now), t.accent, t.onAccent, v -> {
             hideUpdatePopup();
-            SettingsView.openAt(SettingsView.SEC_SYSTEM);
-            closeSettings();
-            openSettings();
-            updater.install(r, prefs.githubToken());
+            autoRelease = r;
+            startUpdateFromHome();
         }), Ui.lp(-2, dp(48)));
 
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
@@ -347,6 +451,8 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
     /** Novità di ogni versione (testi in tutte le lingue in strings.xml). */
     private static int[] newsFor(String ver) {
         switch (ver) {
+            case "0.3.1":
+                return new int[]{R.string.news_v031_1, R.string.news_v031_2, R.string.news_v031_3, R.string.news_v031_4};
             case "0.3.0":
                 return new int[]{R.string.news_v040_1, R.string.news_v040_2, R.string.news_v040_3, R.string.news_v040_4};
             case "0.2.8":
@@ -441,6 +547,9 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
 
     private void build() {
         theme = Theme.resolve(this, prefs);
+        // 0.3.1: scelte che legge il servizio veicolo (riscaldamento sedili/volante, limite di ricarica)
+        VehicleClient.comfortMode = prefs.comfortMode();
+        VehicleClient.limitMode = prefs.chargeLimitMode();
         Ui.K = prefs.uiScaleFactor();
         root.setBackgroundColor(theme.bg);
         root.removeAllViews();
@@ -494,6 +603,8 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
         if (wrongFirmware) return;
         root.removeCallbacks(autoCheck);
         root.removeCallbacks(hidePopup);
+        root.removeCallbacks(dayNightTick);
+        root.removeCallbacks(forcedRetry);
         vehicle.stop();
         conn.stop();
         try {
@@ -514,7 +625,9 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
         // tasto Home: torna sempre alla schermata principale
         // 0.4.0 (punto 3): con il launcher già davanti chiude anche ogni popup aperto (Clima, Comfort, Guida,
         // conferme, elenchi, avvisi)
+        com.mg4.launcher.svc.ReverseReturn.userPressedHome();
         if (inFront) closePopups("tasto Home");
+        noticeOpen = false;
         closeSettings();
         closeApps();
     }

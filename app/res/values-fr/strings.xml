@@ -395,4 +395,27 @@
     <string name="news_v040_2" formatted="false">Le bouton Home physique ferme maintenant tous les popups ouverts sur le launcher</string>
     <string name="news_v040_3" formatted="false">Nouvelles icônes de climatisation (style ISO) dans la barre et les popups Climat/Confort, avec l\'état réel du recyclage</string>
     <string name="news_v040_4" formatted="false">Réglages réorganisés en davantage de sections ; bouton 360 configurable (d\'origine, MG4 360, une autre appli ou masqué) ; bouton Ouvrir d\'Android Auto/CarPlay plus grand</string>
+    <string name="mode_auto" formatted="false">Automatique</string>
+    <string name="cb_scheduled" formatted="false">Programmée</string>
+    <string name="cb_scheduled_title" formatted="false">Recharge programmée</string>
+    <string name="cb_scheduled_on_msg">Activer la recharge programmée (%1$s–%2$s) ? Les horaires se modifient dans l\'appli Énergie.</string>
+    <string name="cb_scheduled_off_msg">Désactiver la recharge programmée (%1$s–%2$s) ? La voiture chargera dès qu\'elle sera branchée.</string>
+    <string name="cb_scheduled_turn_on" formatted="false">Activer</string>
+    <string name="cb_scheduled_turn_off" formatted="false">Désactiver</string>
+    <string name="set_inside_dashes" formatted="false">Sous la température extérieure ; « -- » si la voiture ne la fournit pas</string>
+    <string name="set_charge_limit" formatted="false">Limite de recharge</string>
+    <string name="set_charge_limit_sub" formatted="false">Sur la barre de batterie et parmi les boutons de recharge. Automatique : seulement si la voiture le prend en charge</string>
+    <string name="set_comfort" formatted="false">Sièges et volant chauffants</string>
+    <string name="set_comfort_sub" formatted="false">Automatique : selon la configuration de la voiture. Si vous l\'avez mais qu\'il n\'apparaît pas, choisissez Afficher</string>
+    <string name="set_quick_button" formatted="false">Bouton en haut à droite</string>
+    <string name="set_quick_button_sub" formatted="false">Avec « Aucun », les sources média gardent toujours leur nom</string>
+    <string name="quick_none" formatted="false">Aucun</string>
+    <string name="set_reverse_return" formatted="false">Après la marche arrière, revenir à l\'appli précédente</string>
+    <string name="set_reverse_return_sub" formatted="false">CarPlay, Android Auto (aussi via boîtier) ou le navigateur se rouvrent à la fermeture des caméras</string>
+    <string name="notice_title" formatted="false">Avis</string>
+    <string name="notice_title_important" formatted="false">Avis important</string>
+    <string name="news_v031_1" formatted="false">Thème jour/nuit automatique qui fonctionne vraiment : lever et coucher du soleil selon la position et phares de la voiture ; la voiture dessinée allume ses phares</string>
+    <string name="news_v031_2" formatted="false">Après la marche arrière, retour à CarPlay/Android Auto (aussi via boîtier) ; au démarrage, la dernière source audio reprend et le Bluetooth est plus fiable</string>
+    <string name="news_v031_3" formatted="false">Bande FM/DAB sous la Radio, pression des pneus plus grande, « 360° » au lieu de l\'icône caméra, bouton en haut à droite au choix</string>
+    <string name="news_v031_4" formatted="false">Sièges/volant chauffants et limite de recharge : Automatique, Afficher ou Masquer ; recharge programmée si prise en charge ; mises à jour vérifiées automatiquement</string>
 </resources>

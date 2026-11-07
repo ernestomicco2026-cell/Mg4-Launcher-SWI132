@@ -1,7 +1,6 @@
 package com.mg4.launcher.ui;
 
 import android.content.Context;
-import android.content.res.Configuration;
 
 /** Colori del launcher (stessi valori del mockup approvato). */
 public final class Theme {
@@ -28,47 +27,45 @@ public final class Theme {
     private static Boolean lastDay;
     private static String lastChange = "—";
 
+    /**
+     * 0.3.1: in automatico decide la catena di DayNight (uiMode solo se cambia, fari vicino a tramonto/alba, alba e
+     * tramonto calcolati); la scelta manuale ha sempre la precedenza.
+     */
     public static Theme resolve(Context c, Prefs p) {
         String mode = p.themeMode();
         boolean day;
-        // segnale dell'auto: il sistema passa giorno/notte con la configurazione (uiMode), come per le app originali
-        int night = c.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        String read = night == Configuration.UI_MODE_NIGHT_YES ? "notte" : night == Configuration.UI_MODE_NIGHT_NO ? "giorno" : "non definito";
-        String source;
+        String choice;
         if (Prefs.THEME_DAY.equals(mode)) {
             day = true;
-            source = "scelta Giorno";
+            choice = "scelta Giorno";
         } else if (Prefs.THEME_NIGHT.equals(mode)) {
             day = false;
-            source = "scelta Notte";
+            choice = "scelta Notte";
         } else {
-            day = night == Configuration.UI_MODE_NIGHT_NO;
-            source = "automatico (uiMode di sistema)";
+            day = com.mg4.launcher.svc.DayNight.isDay(c);
+            choice = "automatico";
         }
         if (lastDay == null || lastDay != day) {
             lastChange = new java.text.SimpleDateFormat("dd/MM HH:mm:ss", java.util.Locale.ITALY).format(new java.util.Date());
             lastDay = day;
         }
-        String mgr = "?";
-        try {
-            android.app.UiModeManager um = (android.app.UiModeManager) c.getSystemService(Context.UI_MODE_SERVICE);
-            int m = um.getNightMode();
-            mgr = m == android.app.UiModeManager.MODE_NIGHT_YES ? "notte" : m == android.app.UiModeManager.MODE_NIGHT_NO ? "giorno"
-                    : m == android.app.UiModeManager.MODE_NIGHT_AUTO ? "auto" : String.valueOf(m);
-        } catch (Throwable ignored) {
-        }
-        com.mg4.launcher.svc.Diag.put("tema.stato", source + " · letto " + read + " (UiModeManager " + mgr + ") · applicato "
-                + (day ? "giorno" : "notte") + " · ultimo cambio " + lastChange);
+        report(c, choice, day);
         return new Theme(day);
     }
 
-    /** Tema che si applicherebbe adesso (per ricontrollare al ritorno nel launcher). */
+    /** Diagnostica tema.stato e tema.candidati (formato comune alle quattro versioni). */
+    public static void report(Context c, String choice, boolean day) {
+        com.mg4.launcher.svc.Diag.put("tema.stato", choice + " · " + com.mg4.launcher.svc.DayNight.status() + " · applicato "
+                + (day ? "giorno" : "notte") + " · tema cambiato il " + lastChange);
+        com.mg4.launcher.svc.Diag.putQuiet("tema.candidati", com.mg4.launcher.svc.DayNight.candidates(c));
+    }
+
+    /** Tema che si applicherebbe adesso (per ricontrollare al ritorno nel launcher e ogni 10 s). */
     public static boolean wouldBeDay(Context c, Prefs p) {
         String mode = p.themeMode();
         if (Prefs.THEME_DAY.equals(mode)) return true;
         if (Prefs.THEME_NIGHT.equals(mode)) return false;
-        int night = c.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        return night == Configuration.UI_MODE_NIGHT_NO;
+        return com.mg4.launcher.svc.DayNight.isDay(c);
     }
 
     private static double luminance(int c) {

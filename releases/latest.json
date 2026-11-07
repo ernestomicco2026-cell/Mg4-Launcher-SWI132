@@ -1,6 +1,6 @@
 {
-  "version": "0.3.0",
-  "apk": "releases/MG4Launcher-SWI132-0.3.0.apk",
-  "size": 677904,
-  "notes": "Nuovo pulsante Sblocca presa di ricarica, unità di distanza in miglia, tasto Home che chiude i popup e funziona anche dalle impostazioni dell'auto, nuove icone del clima, impostazioni riorganizzate, tasto 360 configurabile e Apri più grande per Android Auto/CarPlay."
+  "version": "0.3.1",
+  "apk": "releases/MG4Launcher-SWI132-0.3.1.apk",
+  "size": 718864,
+  "notes": "Tema giorno/notte automatico che funziona davvero (alba, tramonto e fari) e fari sull'auto disegnata, ritorno a CarPlay/Android Auto dopo la retromarcia, ultima sorgente audio all'accensione e Bluetooth più affidabile, banda FM/DAB sotto la Radio, pressione gomme più grande, \"360°\" al posto dell'icona della telecamera, pulsante in alto a destra a scelta, scelte per riscaldamento sedili/volante e limite di ricarica, ricarica programmata, aggiornamenti controllati da soli."
 }

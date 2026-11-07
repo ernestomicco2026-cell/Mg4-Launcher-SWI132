@@ -26,6 +26,10 @@ public final class CarBms {
     public static final int ESTD_ELEC_RNG = 557904918;      // int, km
     public static final int CHRG_LOCK = 557904915;          // int, blocco presa: 1 bloccata, 2 sbloccata (comando: 2)
     public static final int CHRG_STS = 557904905;           // int, stato ricarica BMS
+    // 0.3.1: ricarica programmata, come la scheda Impostazioni ricarica dell'app Energia SWI132 (EvCharge_my24_ll, EH32 EU/UK):
+    // interruttore 1 programmata, 2 spenta, 3 programmata + "continua fino al limite"; orari di inizio e fine (ora, minuti)
+    public static final int RESV_SWITCH = 557904909, RESV_START_H = 557904910, RESV_START_M = 557904911,
+            RESV_END_H = 557904912, RESV_END_M = 557904913;
 
     private final Context ctx;
     private final Handler main = new Handler(Looper.getMainLooper());
