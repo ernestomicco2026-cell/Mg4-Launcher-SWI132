@@ -237,6 +237,20 @@ public final class Prefs {
         return sp.getBoolean("tempInternaAssente", false);
     }
 
+    /**
+     * 1.0.3: temperatura interna Automatico (solo se l'auto la fornisce) / Mostra (anche "--") / Nascondi.
+     * Chi aveva acceso l'interruttore della 1.0.2 passa ad Automatico, chi non l'aveva toccato resta con Nascondi.
+     */
+    public String insideTempMode() {
+        String v = sp.getString("tempInternaModo", null);
+        if (LIMIT_AUTO.equals(v) || LIMIT_SHOW.equals(v) || LIMIT_HIDE.equals(v)) return v;
+        return sp.getBoolean("showInsideTemp", false) ? LIMIT_AUTO : LIMIT_HIDE;
+    }
+
+    public void setInsideTempMode(String v) {
+        sp.edit().putString("tempInternaModo", v).apply();
+    }
+
     // --- novità 0.8.0 ---
 
     /** Data tra l'autonomia e l'ora (spenta di default). */
@@ -410,5 +424,65 @@ public final class Prefs {
 
     public void setQuickButton(String v) {
         sp.edit().putString("pulsanteRapido", v == null ? QUICK_PROJ : v).apply();
+    }
+
+    // --- 0.3.2 (come la SWI68 1.0.3) ---
+
+    /** Nomi usati dal codice in comune con la SWI68 (stessi valori delle scelte della SWI132). */
+    public static final String LIMIT_AUTO = SHOW_AUTO, LIMIT_SHOW = SHOW_ON, LIMIT_HIDE = SHOW_OFF;
+    public static final String TOP_PROJECTION = QUICK_PROJ, TOP_APP = QUICK_APP, TOP_NONE = QUICK_NONE;
+
+    /** Ordine in alto nel riquadro destro: false = sorgenti poi Mappa/Media (attuale, predefinito), true = scambiato. */
+    public boolean topSwapped() {
+        return sp.getBoolean("ordineAltoScambiato", false);
+    }
+
+    public void setTopSwapped(boolean b) {
+        sp.edit().putBoolean("ordineAltoScambiato", b).apply();
+    }
+
+    /** Riquadro in basso accanto al clima: "media" (come prima, predefinito), "telefono" (preferiti), "app" (scorciatoie). */
+    public static final String TILE_MEDIA = "media", TILE_PHONE = "telefono", TILE_APPS = "app";
+    public static final int TILE_MAX = 6;
+
+    public String tileMode() {
+        String v = sp.getString("riquadroBasso", TILE_MEDIA);
+        return TILE_PHONE.equals(v) || TILE_APPS.equals(v) ? v : TILE_MEDIA;
+    }
+
+    public void setTileMode(String v) {
+        sp.edit().putString("riquadroBasso", v).apply();
+    }
+
+    /** Preferiti telefono scelti dall'utente (nome, numero), al massimo 6. Restano solo sull'auto, mai nei log. */
+    public java.util.List<String[]> tileContacts() {
+        java.util.List<String[]> out = new java.util.ArrayList<>();
+        for (String line : sp.getString("riquadroContatti", "").split("\n")) {
+            int tab = line.indexOf('\t');
+            if (tab <= 0 || tab == line.length() - 1) continue;
+            out.add(new String[]{line.substring(0, tab), line.substring(tab + 1)});
+            if (out.size() == TILE_MAX) break;
+        }
+        return out;
+    }
+
+    public void setTileContacts(java.util.List<String[]> list) {
+        StringBuilder sb = new StringBuilder();
+        for (String[] c : list) {
+            if (sb.length() > 0) sb.append('\n');
+            sb.append(c[0].replace('\t', ' ').replace('\n', ' ')).append('\t').append(c[1]);
+        }
+        sp.edit().putString("riquadroContatti", sb.toString()).apply();
+    }
+
+    /** Scorciatoie app del riquadro (pacchetti), al massimo 6. */
+    public java.util.List<String> tileApps() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String p : sp.getString("riquadroApp", "").split(",")) if (!p.trim().isEmpty() && out.size() < TILE_MAX) out.add(p.trim());
+        return out;
+    }
+
+    public void setTileApps(java.util.List<String> pkgs) {
+        sp.edit().putString("riquadroApp", android.text.TextUtils.join(",", pkgs)).apply();
     }
 }

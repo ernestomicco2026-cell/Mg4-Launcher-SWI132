@@ -568,6 +568,13 @@ public final class VehicleClient {
                 src = names[i];
             }
         }
+        // 0.3.2: proprietà assente su questa auto (elenco già letto) → l'opzione Automatico della temperatura interna si
+        // nasconde da sola
+        Boolean avCur = props.available(CarProps.HVAC_TEMPERATURE_CURRENT);
+        if (avCur != null) {
+            android.content.SharedPreferences sp = ctx.getSharedPreferences("mg4launcher", Context.MODE_PRIVATE);
+            if (sp.getBoolean("tempInternaAssente", false) != !avCur) sp.edit().putBoolean("tempInternaAssente", !avCur).apply();
+        }
         insideCache = found;
         insideSrc = src;
         Diag.put("clima.tempInterna", (src.isEmpty() ? "-- (nessuna fonte valida)" : found + " da " + src) + " · esterna "

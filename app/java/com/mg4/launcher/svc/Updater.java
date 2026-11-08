@@ -439,6 +439,37 @@ public final class Updater {
                 + " · confermati " + (ok.isEmpty() ? "nessuno" : ok));
     }
 
+    /** 0.3.2 (Controllo funzioni): legge latest.json e avvisi.json senza toccare lo stato degli aggiornamenti. */
+    public static String[] probeRemote() {
+        String[] out = new String[2];
+        try {
+            out[0] = new JSONObject(getSmall(OWN_RAW + "releases/latest.json")).optString("version", "?");
+        } catch (Exception e) {
+            out[0] = null;
+        }
+        try {
+            JSONArray a = new JSONObject(getSmall(OWN_RAW + "releases/avvisi.json")).optJSONArray("avvisi");
+            out[1] = String.valueOf(a == null ? 0 : a.length());
+        } catch (Exception e) {
+            out[1] = null;
+        }
+        return out;
+    }
+
+    /** GET di un file piccolo (JSON) dal proprio repository. */
+    private static String getSmall(String url) throws IOException {
+        if (!url.startsWith(OWN_RAW)) throw new IOException("indirizzo non ammesso");
+        HttpURLConnection c = (HttpURLConnection) new java.net.URL(url).openConnection();
+        c.setConnectTimeout(10_000);
+        c.setReadTimeout(15_000);
+        try {
+            if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode());
+            return readAll(c.getInputStream());
+        } finally {
+            c.disconnect();
+        }
+    }
+
     private static boolean isApk(byte[] b) {
         return b != null && b.length >= 1024 && b[0] == 'P' && b[1] == 'K';
     }

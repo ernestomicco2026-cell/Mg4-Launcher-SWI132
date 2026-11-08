@@ -23,6 +23,9 @@ import java.util.TimeZone;
  *       alba e tramonto: in Italia gli anabbaglianti sono obbligatori anche di giorno fuori città;</li>
  *   <li>alba e tramonto calcolati senza rete dalla posizione (riserva: fuso orario, poi centro Italia).</li>
  * </ol>
+ * 0.3.2: uiMode si ignora anche se resta fermo (giorno o notte) da 12 ore di accensione e contraddice il sole (notte con
+ * il sole sopra +6°, giorno con il sole sotto −6°); alla prima accensione senza storico basta "notte" con il sole sopra
+ * +10°. Resta ignorato finché uiMode non cambia davvero; allora fari → alba/tramonto.
  * Il cambio si applica solo dopo che il nuovo valore resta uguale per 60 s. La scelta manuale ha sempre la precedenza
  * (la gestisce Theme).
  */
@@ -80,6 +83,30 @@ public final class DayNight {
     private static Boolean pending;
     private static long pendingSince;
     private static String source = "—", lastChange = "—", lastDetail = "";
+    private static volatile double lastSunElevation = Double.NaN;
+    private static volatile boolean stuckNow;
+
+    // ---- 0.3.2: letture per il Controllo funzioni --------------------------------------------------
+
+    /** Fonte usata adesso. */
+    public static synchronized String source() {
+        return source;
+    }
+
+    /** Tema automatico applicato: true giorno, false notte, null non ancora deciso. */
+    public static synchronized Boolean applied() {
+        return applied;
+    }
+
+    /** Altezza del sole in gradi (NaN se non ancora calcolata). */
+    public static double sunElevation() {
+        return lastSunElevation;
+    }
+
+    /** uiMode considerato bloccato (ignorato). */
+    public static boolean uiStuck() {
+        return stuckNow;
+    }
 
     /** Giorno secondo la catena (con l'attesa di 60 s). Va chiamato spesso (ogni 10 s) e a ogni costruzione della home. */
     public static synchronized boolean isDay(Context c) {
@@ -132,8 +159,28 @@ public final class DayNight {
         if (night != startNight && night != Configuration.UI_MODE_NIGHT_UNDEFINED) uiModeMoved = true;
         d.append("uiMode ").append(night == Configuration.UI_MODE_NIGHT_YES ? "notte" : night == Configuration.UI_MODE_NIGHT_NO ? "giorno" : "non definito")
                 .append(uiModeMoved ? " (cambiato)" : " (fermo)");
-        // d) sole (serve anche ai fari)
+        // d) sole (serve anche ai fari e al controllo di uiMode)
         Sun sun = sun(c);
+        double elev = elevation(sun.lat, sun.lon, System.currentTimeMillis());
+        lastSunElevation = elev;
+        // 0.3.2: uiMode fermo da 12 h di accensione che contraddice il sole → bloccato, ignorato
+        int uiNight = night == Configuration.UI_MODE_NIGHT_YES ? 1 : night == Configuration.UI_MODE_NIGHT_NO ? 0 : -1;
+        SharedPreferences sp = c.getApplicationContext().getSharedPreferences("mg4launcher", Context.MODE_PRIVATE);
+        trackUiChanges(sp, uiNight);
+        if (uiNight >= 0 && !Double.isNaN(elev)) {
+            boolean contradicts = uiNight == 1 ? elev > 6 : elev < -6;
+            long onMs = sp.getLong(K_UI_ON_MS, 0) + onPending;
+            boolean noHistory = sp.getLong(K_UI_CHANGED_AT, 0) == 0 && onMs < UI_STUCK_ON_MS;
+            if (!sp.getBoolean(K_UI_STUCK, false)) {
+                if (onMs >= UI_STUCK_ON_MS && contradicts) markStuck(sp, "mai cambiato da 12 h, contraddice il sole");
+                else if (noHistory && uiNight == 1 && elev > 10) markStuck(sp, "prima accensione, notte con il sole a " + Math.round(elev) + "°");
+            }
+        }
+        stuckNow = sp.getBoolean(K_UI_STUCK, false);
+        if (stuckNow) d.append(" · uiMode bloccato (").append(sp.getString(K_UI_STUCK_WHY, "bloccato")).append("): ignorato");
+        long at = sp.getLong(K_UI_CHANGED_AT, 0);
+        d.append(" · ultimo cambio uiMode ").append(at == 0 ? "mai visto" : new SimpleDateFormat("dd/MM HH:mm", Locale.ITALY).format(new Date(at)))
+                .append(" (").append((sp.getLong(K_UI_ON_MS, 0) + onPending) / 3_600_000L).append(" h di accensione da allora)");
         int minNow = minutesNow();
         boolean sunDay = sun.valid ? (minNow >= sun.rise && minNow < sun.set) : (minNow >= 7 * 60 && minNow < 18 * 60);
         boolean twilight = sun.valid && (Math.abs(minNow - sun.rise) <= TWILIGHT_MIN || Math.abs(minNow - sun.set) <= TWILIGHT_MIN);
@@ -144,8 +191,9 @@ public final class DayNight {
                 .append(" (grezzi ").append(raw(dipped)).append('/').append(raw(side)).append('/').append(raw(switchPos)).append(')');
         d.append(" · sole alba ").append(sun.valid ? hm(sun.rise) : "?").append(" tramonto ").append(sun.valid ? hm(sun.set) : "?")
                 .append(" (").append(sun.where).append(')');
+        if (!Double.isNaN(elev)) d.append(" · sole a ").append(Math.round(elev)).append('°');
         d.append(" · home originale: nessun segnale (solo temi)");
-        if (uiModeMoved) {
+        if (uiModeMoved && !stuckNow) {
             e.day = night != Configuration.UI_MODE_NIGHT_YES;
             e.source = "uiMode";
         } else if (twilight && (lb >= 0 || pl >= 0)) {
@@ -158,6 +206,63 @@ public final class DayNight {
         }
         e.detail = d.toString();
         return e;
+    }
+
+    // ---- uiMode bloccato (0.3.2, come SWI68 1.0.3) -------------------------------------------------
+
+    private static final long UI_STUCK_ON_MS = 12L * 60 * 60 * 1000;
+    /** Intervallo massimo contato tra due controlli (il tema si controlla ogni 10 s): il tempo a auto spenta non conta. */
+    private static final long MAX_GAP_MS = 30_000;
+    private static final String K_UI_LAST = "temaUiUltimo", K_UI_CHANGED_AT = "temaUiCambiatoAlle", K_UI_ON_MS = "temaUiAccesoMs",
+            K_UI_STUCK = "temaUiBloccato", K_UI_STUCK_WHY = "temaUiBloccatoPerche";
+    private static long onTickAt, onPending, onSavedAt;
+
+    /** Conta il tempo di accensione da quando uiMode è cambiato l'ultima volta (giorno↔notte), anche tra un'accensione e l'altra. */
+    private static void trackUiChanges(SharedPreferences sp, int uiNight) {
+        long now = SystemClock.elapsedRealtime();
+        if (onTickAt > 0) onPending += Math.max(0, Math.min(now - onTickAt, MAX_GAP_MS));
+        onTickAt = now;
+        if (uiNight < 0) return;
+        int last = sp.getInt(K_UI_LAST, -1);
+        SharedPreferences.Editor e = null;
+        if (last != uiNight) {
+            e = sp.edit().putInt(K_UI_LAST, uiNight);
+            if (last >= 0) {
+                // cambio reale: si azzera il conteggio e uiMode torna affidabile
+                e.putLong(K_UI_CHANGED_AT, System.currentTimeMillis()).putLong(K_UI_ON_MS, 0).putBoolean(K_UI_STUCK, false).remove(K_UI_STUCK_WHY);
+                onPending = 0;
+                onSavedAt = now;
+            }
+        }
+        if (onPending > 0 && (now - onSavedAt > 5 * 60_000L || e != null)) {
+            if (e == null) e = sp.edit();
+            e.putLong(K_UI_ON_MS, sp.getLong(K_UI_ON_MS, 0) + onPending);
+            onPending = 0;
+            onSavedAt = now;
+        }
+        if (e != null) e.apply();
+    }
+
+    private static void markStuck(SharedPreferences sp, String why) {
+        sp.edit().putBoolean(K_UI_STUCK, true).putString(K_UI_STUCK_WHY, why).apply();
+        Diag.put("tema.uiMode", "bloccato: " + why);
+    }
+
+    /** Altezza del sole sull'orizzonte (gradi) in quel momento (formule NOAA). */
+    static double elevation(double lat, double lon, long utcMs) {
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        cal.setTimeInMillis(utcMs);
+        int doy = cal.get(Calendar.DAY_OF_YEAR);
+        double hour = cal.get(Calendar.HOUR_OF_DAY) + cal.get(Calendar.MINUTE) / 60.0 + cal.get(Calendar.SECOND) / 3600.0;
+        double g = 2 * Math.PI / 365.0 * (doy - 1 + (hour - 12) / 24);
+        double eqt = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+        double decl = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g)
+                - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+        double tst = hour * 60 + eqt + 4 * lon;
+        double ha = Math.toRadians(tst / 4 - 180);
+        double latR = Math.toRadians(lat);
+        double cosZ = Math.sin(latR) * Math.sin(decl) + Math.cos(latR) * Math.cos(decl) * Math.cos(ha);
+        return 90 - Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, cosZ))));
     }
 
     private static String raw(int v) {
@@ -199,6 +304,7 @@ public final class DayNight {
     private static final class Sun {
         boolean valid;
         int rise, set;      // minuti locali
+        double lat = 42.5, lon = 12.5;
         String where = "";
     }
 
@@ -211,6 +317,8 @@ public final class DayNight {
         sunAt = now;
         Sun s = new Sun();
         double[] pos = position(c, s);
+        s.lat = pos[0];
+        s.lon = pos[1];
         Calendar cal = Calendar.getInstance();
         int doy = cal.get(Calendar.DAY_OF_YEAR);
         double offsetH = TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 3_600_000.0;

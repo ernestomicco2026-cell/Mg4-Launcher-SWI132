@@ -88,6 +88,11 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
         nav = new NavClient(this);
         updater = new Updater(this);
         logs = new com.mg4.launcher.svc.LogUploader(this);
+        // 0.3.2: Controllo funzioni (sola lettura) e controllo automatico 60 s dopo l'avvio di una versione nuova
+        com.mg4.launcher.svc.SelfCheck.bind(vehicle, media, logs);
+        // 0.3.2: tasti al volante (log media.tastiVolante; avanti/indietro alla USB 2 quando serve)
+        com.mg4.launcher.svc.WheelKeys.start(this, media);
+        com.mg4.launcher.svc.SelfCheck.scheduleAfterUpdate(this, updater.currentVersion());
         lastUiMode = getResources().getConfiguration().uiMode;
 
         root = new FrameLayout(this);
@@ -451,6 +456,8 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
     /** Novità di ogni versione (testi in tutte le lingue in strings.xml). */
     private static int[] newsFor(String ver) {
         switch (ver) {
+            case "0.3.2":
+                return new int[]{R.string.news_v032_1, R.string.news_v032_2, R.string.news_v032_3, R.string.news_v032_4, R.string.news_v032_5};
             case "0.3.1":
                 return new int[]{R.string.news_v031_1, R.string.news_v031_2, R.string.news_v031_3, R.string.news_v031_4};
             case "0.3.0":
@@ -519,6 +526,10 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
     protected void onResume() {
         super.onResume();
         inFront = true;
+        // 0.3.2 (punto 7): tornando dall'app Radio l'elenco delle stazioni si rilegge subito
+        if (media != null) media.refreshRadioLists("ritorno nel launcher");
+        // 0.3.2 (punto 8): stato del telefono riletto (riquadro "Preferiti telefono")
+        com.mg4.launcher.svc.PhoneClient.get(this).refresh();
         if (wrongFirmware) {
             goFullscreen();
             return;

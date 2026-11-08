@@ -128,7 +128,9 @@ public final class CarProps {
                         allAreas.put(id, ids != null && ids.length > 0 ? ids : new int[]{0});
                     }
                     Diag.put("auto.proprietà", cfgs.size() + " disponibili; TPMS " + (areas.containsKey(TIRE_FL) ? "sì" : "no")
-                            + ", temp. interna " + (areas.containsKey(HVAC_TEMPERATURE_CURRENT) || areas.containsKey(HVAC_AMBIENT_TEMPERATURE) ? "sì" : "no"));
+                            // 1.0.3: "ambient" è la temperatura esterna, non conta come interna
+                            + ", temp. interna " + (areas.containsKey(HVAC_TEMPERATURE_CURRENT) ? "sì"
+                            : areas.containsKey(HVAC_AMBIENT_TEMPERATURE) ? "no (solo ambient = esterna)" : "no"));
                 }
             } catch (Throwable e) {
                 areasRead = false;
@@ -249,6 +251,11 @@ public final class CarProps {
                     .append(" (").append(r[0]).append('…').append(r[1]).append(')').append(outsideLike ? " =est" : "");
         }
         return n + " letture · " + (all.length() == 0 ? "nessun valore da temperatura" : all);
+    }
+
+    /** 0.3.2: true solo se la proprietà è sicuramente nell'elenco dell'auto (false anche se non si sa ancora). */
+    public boolean has(int prop) {
+        return Boolean.TRUE.equals(available(prop));
     }
 
     /** False se la proprietà non è nell'elenco dell'auto o è stata rifiutata; null se non si sa ancora. */

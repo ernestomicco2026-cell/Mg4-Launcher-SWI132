@@ -1,6 +1,6 @@
 {
-  "version": "0.3.1",
-  "apk": "releases/MG4Launcher-SWI132-0.3.1.apk",
-  "size": 718864,
-  "notes": "Tema giorno/notte automatico che funziona davvero (alba, tramonto e fari) e fari sull'auto disegnata, ritorno a CarPlay/Android Auto dopo la retromarcia, ultima sorgente audio all'accensione e Bluetooth più affidabile, banda FM/DAB sotto la Radio, pressione gomme più grande, \"360°\" al posto dell'icona della telecamera, pulsante in alto a destra a scelta, scelte per riscaldamento sedili/volante e limite di ricarica, ricarica programmata, aggiornamenti controllati da soli."
+  "version": "0.3.2",
+  "apk": "releases/MG4Launcher-SWI132-0.3.2.apk",
+  "size": 772112,
+  "notes": "Seconda porta USB come sorgente separata (anche con i tasti al volante), riquadro accanto al clima a scelta (Media, Preferiti telefono con chiamata a un tocco, Scorciatoie app), ordine dei comandi in alto a scelta, FM/DAB di nuovo accanto ai comandi e più grande, Controllo funzioni nelle impostazioni, correzioni a tema giorno/notte, temperatura interna, Bluetooth all'accensione, elenco stazioni e invio dei log."
 }

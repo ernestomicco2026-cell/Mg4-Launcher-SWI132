@@ -6,6 +6,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- indicatori Bluetooth e Wi-Fi in alto a destra -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
+    <!-- 0.3.2: rubrica del telefono Bluetooth per i "Preferiti telefono" del riquadro in basso -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- 0.3.2: per chiedere la chiamata al servizio dell'app telefono originale (protetto da questo permesso di sistema) -->
+    <uses-permission android:name="android.permission.BIND_INCALL_SERVICE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- 0.3.1: posizione approssimata (solo sull'auto) per calcolare alba e tramonto del tema automatico -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
