@@ -17,7 +17,7 @@
 
 # MG4 Launcher — SWI132 (MG4 MY24)
 
-<p align="center"><img src="screenshots/home.png" alt="Home di MG4 Launcher SWI132 (simulazione) · MG4 Launcher SWI132 home (mock-up)" width="100%"></p>
+<p align="center"><img src="screenshots/MG4Launcher-SWI132-0.3.3-ricarica.gif" alt="Home di MG4 Launcher SWI132 con l'animazione di ricarica (simulazione) · MG4 Launcher SWI132 home with the charging animation (mock-up)" width="100%"></p>
 
 <p align="center">
 <b>Launcher in stile Tesla per l'infotainment MG4 SWI132</b><br>
