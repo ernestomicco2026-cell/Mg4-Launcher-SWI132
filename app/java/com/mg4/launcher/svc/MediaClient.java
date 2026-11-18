@@ -478,11 +478,29 @@ public final class MediaClient {
         }
     }
 
+    /** Riserva: CarPlay / Android Auto dalla sessione media attiva delle app AllGo (0 se nessuna). */
+    private int projectionFromSessions() {
+        try {
+            android.media.session.MediaSessionManager msm =
+                    (android.media.session.MediaSessionManager) ctx.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController mc : msm.getActiveSessions(null)) {
+                String p = mc.getPackageName();
+                if ("com.allgo.app.androidauto".equals(p)) return DEV_AAUTO;
+                if ("com.allgo.carplay.service".equals(p)) return DEV_CARPLAY;
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0;
+    }
+
     private void poll() {
         State s = new State();
 
-        // CarPlay / Android Auto collegato?
+        // CarPlay / Android Auto collegato? 0.3.3 (SWI68 1.0.4 punto E5): fonte principale il servizio AllGo
+        // (codice 15); se non risponde, le sessioni media delle app AllGo
         IBinder r = rui.binder();
+        String projSrc = "AllGo (codice 15)";
+        boolean ruiOk = false;
         if (r != null) {
             try {
                 int[] dev = Rpc.call(r, RUI, RUI_ACTIVE_DEVICE, Rpc.NONE, p -> Rpc.readNullable(p, q -> {
@@ -495,11 +513,18 @@ public final class MediaClient {
                     return new int[]{type, session};
                 }));
                 s.deviceType = dev == null ? 0 : dev[0];
-                Diag.put("carplay.dispositivo", dev == null ? "nessuno" : ("tipo " + dev[0] + ", sessione " + dev[1] + ", " + s.deviceName));
+                ruiOk = true;
+                // nel log niente nome del telefono (dato personale)
+                Diag.put("carplay.dispositivo", dev == null ? "nessuno" : ("tipo " + dev[0] + ", sessione " + dev[1]));
             } catch (Exception e) {
                 Diag.error("carplay", e.toString());
             }
         }
+        if (!ruiOk) {
+            projSrc = "sessioni media AllGo (servizio AllGo non risponde)";
+            s.deviceType = projectionFromSessions();
+        }
+        Diag.putQuiet("proiezione", "fonte " + projSrc + " · " + (s.deviceType == DEV_AAUTO ? "AA" : s.deviceType == DEV_CARPLAY ? "CarPlay" : "nessuna"));
 
         // sorgenti disponibili
         s.sources.add(SRC_RADIO);
@@ -512,6 +537,7 @@ public final class MediaClient {
         }
         s.sources.add(SRC_BT);
         if (online.ready() && onlineAvailable()) s.sources.add(SRC_ONLINE);
+        onlinePossible = s.sources.contains(SRC_ONLINE);
         if (s.deviceType == DEV_CARPLAY) s.sources.add(SRC_CARPLAY);
         if (s.deviceType == DEV_AAUTO) s.sources.add(SRC_AAUTO);
 
@@ -852,6 +878,7 @@ public final class MediaClient {
                 } else if (code == 3) {            // notifyDabMainInfoChanged(RadioDabStation)
                     if (data.readInt() != 0) {
                         dabCurrent = readDabStation(data);
+                        rememberDab(dabCurrent);
                         bandFromCallback = BAND_DAB;
                     }
                 } else if (code == 4) {            // notifyDabDLSChanged(char[])
@@ -910,6 +937,9 @@ public final class MediaClient {
     private volatile boolean onlineFailed;      // toccata ma non è partita: nascosta fino al riavvio del launcher
 
     /** "0" = funzione assente sull'auto: il servizio esiste ma non riproduce nulla, quindi il pulsante non si mostra. */
+    /** 0.3.3: la musica Online di solito non c'è: l'opzione si mostra solo se la sorgente è comparsa. */
+    public static volatile boolean onlinePossible;
+
     private boolean onlineAvailable() {
         if (!onlineFeatureRead) {
             onlineFeatureRead = true;
@@ -1041,7 +1071,36 @@ public final class MediaClient {
     // ---- 0.3.1: avvio vero della radio, con nuovi tentativi (punti 4 e 10b) --------------------------
 
     private static final long[] RADIO_RETRY_MS = {1000, 2000, 4000};
+    /** 0.3.3 (SWI68 1.0.4 punto C1): all'accensione controlli per circa 49 s (1+2+3+5+8+10+10+10). */
+    private static final long[] RADIO_RESUME_MS = {1000, 2000, 3000, 5000, 8000, 10_000, 10_000, 10_000};
+    private static final long RADIO_READY_MAX_MS = 20_000;
     private volatile int radioRun;   // il tentativo più recente vince sui precedenti
+    private volatile boolean radioPowerOn;
+    private long[] radioWaits = RADIO_RETRY_MS;
+    private long radioStartAt, radioReadyWaited;
+
+    /**
+     * 0.3.3: all'accensione il sintonizzatore può non essere ancora pronto. Prima si aspetta che il servizio radio sia
+     * collegato e la sua sessione pronta (fino a 20 s, controllo ogni secondo), poi si avvia con i controlli lunghi.
+     * Se nel frattempo l'utente sceglie un'altra sorgente la ripresa si ferma. Log radio.pronta e radio.tentativi.
+     */
+    private void waitRadioReady(String why, int run) {
+        if (run != radioRun || chosen != SRC_RADIO) {
+            Diag.put("radio.tentativi", "avvio RADIO: annullato, l'utente ha scelto un'altra sorgente");
+            return;
+        }
+        long waited = SystemClock.uptimeMillis() - radioStartAt;
+        boolean ready = radio.binder() != null && radioMbs.ready();
+        if (ready || waited >= RADIO_READY_MAX_MS) {
+            radioReadyWaited = waited;
+            Diag.put("radio.pronta", (ready ? "pronta" : "non ancora pronta, provo lo stesso") + " dopo " + Math.round(waited / 1000.0)
+                    + " s (servizio " + (radio.binder() != null ? "collegato" : "non collegato") + ", sessione " + (radioMbs.ready() ? "pronta" : "non pronta") + ")");
+            radioWaits = RADIO_RESUME_MS;
+            startRadio(why, 0, true);
+            return;
+        }
+        bg.postDelayed(() -> waitRadioReady(why, run), 1000);
+    }
 
     /**
      * Avvia la sessione radio dell'auto (focus audio e ultima stazione, come il play dell'app Radio). Se il servizio o la
@@ -1049,8 +1108,23 @@ public final class MediaClient {
      * nessun errore. I tentativi vanno nella diagnostica (radio.avvio).
      */
     private void startRadio(String why, int attempt) {
-        if (attempt == 0) radioRun++;
+        if (attempt == 0 && radioPowerOn) {
+            // ripresa all'accensione: prima si aspetta il sintonizzatore
+            radioPowerOn = false;
+            radioRun++;
+            radioStartAt = SystemClock.uptimeMillis();
+            waitRadioReady(why + " (accensione)", radioRun);
+            return;
+        }
+        if (attempt == 0) radioWaits = RADIO_RETRY_MS;
+        startRadio(why, attempt, false);
+    }
+
+    private void startRadio(String why, int attempt, boolean keepRun) {
+        if (attempt == 0 && !keepRun) radioRun++;
         final int run = radioRun;
+        final long[] waits = radioWaits;
+        final boolean power = waits == RADIO_RESUME_MS;
         MediaController.TransportControls tc = radioMbs.controls();
         boolean service = radio.binder() != null;
         if (tc != null) {
@@ -1060,20 +1134,28 @@ public final class MediaClient {
             radioMbs.retry(200);
         }
         String state = (service ? "servizio pronto" : "servizio non pronto") + ", " + (tc != null ? "play inviato" : "sessione non collegata");
-        if (attempt >= RADIO_RETRY_MS.length) {
+        if (attempt >= waits.length) {
             Diag.put("radio.avvio", why + " · tentativo " + (attempt + 1) + ": " + state + " · " + (radioMbs.isPlaying() ? "in onda" : "non partita, smetto"));
+            if (power) Diag.put("radio.tentativi", "avvio RADIO: " + (radioMbs.isPlaying() ? "riuscito" : "non riuscito") + " · attesa servizio "
+                    + Math.round(radioReadyWaited / 1000.0) + " s · tentativi " + (attempt + 1) + " · totale "
+                    + Math.round((SystemClock.uptimeMillis() - radioStartAt) / 1000.0) + " s");
             return;
         }
         Diag.put("radio.avvio", why + " · tentativo " + (attempt + 1) + ": " + state);
         bg.postDelayed(() -> {
-            if (run != radioRun || chosen != SRC_RADIO) return;
+            if (run != radioRun || chosen != SRC_RADIO) {
+                if (power) Diag.put("radio.tentativi", "avvio RADIO: annullato, l'utente ha scelto un'altra sorgente · tentativi " + (attempt + 1));
+                return;
+            }
             if (radioMbs.isPlaying()) {
                 Diag.put("radio.avvio", why + " · in onda al tentativo " + (attempt + 1));
+                if (power) Diag.put("radio.tentativi", "avvio RADIO: riuscito · attesa servizio " + Math.round(radioReadyWaited / 1000.0)
+                        + " s · tentativi " + (attempt + 1) + " · totale " + Math.round((SystemClock.uptimeMillis() - radioStartAt) / 1000.0) + " s");
                 poll();
                 return;
             }
-            startRadio(why, attempt + 1);
-        }, RADIO_RETRY_MS[attempt]);
+            startRadio(why, attempt + 1, true);
+        }, waits[attempt]);
     }
 
     // ---- 0.3.1: ultima sorgente usata davvero e ripresa all'accensione (punto 10a) ---------------------
@@ -1163,6 +1245,7 @@ public final class MediaClient {
         }
         Diag.put("media.avvio", why + " · salvata " + (saved == 0 ? "nessuna" : sourceName(ctx, saved)) + " · ripresa "
                 + sourceName(ctx, target) + note + " · attesa " + (waited / 1000) + " s");
+        if (target == SRC_RADIO) radioPowerOn = true;
         selectSource(target);
     }
 
@@ -1256,7 +1339,10 @@ public final class MediaClient {
                 Diag.put("media.avvio", why + " · salvata BLUETOOTH · ripresa " + sourceName(ctx, target));
                 // il play dopo un attimo: la sessione Bluetooth appena ricollegata deve essere pronta
                 bg.postDelayed(() -> {
-                    if (chosen == 0 && prevActive == 0) selectSource(target);
+                    if (chosen == 0 && prevActive == 0) {
+                        if (target == SRC_RADIO) radioPowerOn = true;
+                        selectSource(target);
+                    }
                 }, target == SRC_BT && !bt.ready() ? 1500 : 0);
             }
         }
@@ -1310,6 +1396,24 @@ public final class MediaClient {
     }
 
     private volatile String fmListFrom = "stazioni salvate", dabListFrom = "stazioni salvate";
+
+    /**
+     * 0.3.3 (da SWI69 0.4.4, EH32): il servizio radio non manda l'elenco DAB ai client esterni e l'elenco FM
+     * pre-scansionato resta nel database privato dell'app Radio. Ogni stazione DAB sintonizzata entra nell'elenco e viene
+     * ricordata, come per l'FM (nomi RDS e risultati delle ricerche).
+     */
+    private void rememberDab(Station d) {
+        if (d == null || d.name.trim().isEmpty() || d.sid == 0) return;
+        List<Station> cur = dabList;
+        for (Station st : cur) if (st.sid == d.sid && st.name.equalsIgnoreCase(d.name)) return;
+        List<Station> out = new ArrayList<>(cur);
+        out.add(d);
+        java.util.Collections.sort(out, (x, y) -> x.name.compareToIgnoreCase(y.name));
+        if (out.size() > 300) return;
+        dabList = out;
+        saveList("radio_dab_elenco", out);
+        dabListFrom = "stazioni DAB ascoltate";
+    }
     private String listNote = "";
 
     private void noteList(int band, String from, int n) {
@@ -1348,6 +1452,26 @@ public final class MediaClient {
     // ---- 0.3.2 (punto 6): tasti al volante con la USB 2 -----------------------------------------------
 
     private volatile long wheelAt;
+
+    /** 0.3.3: la USB 2 è la sorgente in riproduzione. */
+    public boolean usb2Playing() {
+        return prevActive == SRC_USB2 && usb2.isPlaying();
+    }
+
+    /** 0.3.3: avanti/indietro subito alla sessione della USB 2 (dal listener dei tasti multimediali). */
+    public void skipUsb2(boolean forward) {
+        post(() -> {
+            MediaController.TransportControls tc = usb2.controls();
+            if (tc == null) {
+                Diag.put("media.tastiVolante.instradamento", (forward ? "avanti" : "indietro") + " · USB 2: sessione non collegata");
+                return;
+            }
+            if (forward) tc.skipToNext();
+            else tc.skipToPrevious();
+            Diag.put("media.tastiVolante.instradamento", (forward ? "avanti" : "indietro") + " · USB 2: mandato alla sessione USB 2 (tasto multimediale)");
+            bg.postDelayed(this::poll, 800);
+        });
+    }
 
     /**
      * Tasto avanti/indietro al volante visto (avviso com.saic.keyevent.hardkey.report). Se suona la USB 2, dopo 0,8 s si

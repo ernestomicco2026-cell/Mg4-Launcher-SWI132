@@ -1,5 +1,7 @@
 package com.mg4.launcher.svc;
 
+import android.os.SystemClock;
+
 import android.accessibilityservice.AccessibilityService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -239,6 +241,7 @@ public final class BootAccessibility extends AccessibilityService {
         }
 
         if (e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
+        guardAndroidSettings(pkg);   // 0.4.4 (issue #29): impostazioni di Android aperte → home MG riaccesa in anticipo
         StartGuard.onForeground(this, pkg, e.getClassName() == null ? null : e.getClassName().toString(), true);
         if (getPackageName().equals(pkg)) probeSystemButton();
         // il nostro launcher deve restare in primo piano 5 s: si ricontrolla senza aspettare un altro evento
@@ -248,6 +251,26 @@ public final class BootAccessibility extends AccessibilityService {
     }
 
     private long lastProbe;
+
+    // ---- 0.4.4 (issue #29, dalla SWI68 1.0.4): impostazioni di Android aperte → home MG riaccesa in anticipo -----
+    //
+    // Se il launcher viene tolto dal menu App di Android non ha modo di riaccendere la home MG (l'auto resterebbe su
+    // "Smartphone starting"). Per questo, appena davanti ci sono le impostazioni di Android o la conferma di
+    // disinstallazione, la schermata della home MG si riaccende subito: la home predefinita resta la nostra, quindi
+    // non cambia niente per chi guida. Tornati nel launcher l'avvio sicuro la rispegne (MainActivity.onResume).
+    private static final java.util.Set<String> ANDROID_SETTINGS = new java.util.HashSet<>(java.util.Arrays.asList(
+            "com.android.settings", "com.android.packageinstaller", "com.google.android.packageinstaller"));
+    private long settingsGuardAt;
+
+    private void guardAndroidSettings(String pkg) {
+        if (!ANDROID_SETTINGS.contains(pkg)) return;
+        long now = SystemClock.uptimeMillis();
+        if (now - settingsGuardAt < 3000) return;
+        settingsGuardAt = now;
+        new Thread(() -> {
+            if (HomeLock.mgDisabled(this)) HomeLock.release(this, "impostazioni di Android aperte (" + pkg + ")");
+        }, "mg4-homelock").start();
+    }
 
     /**
      * 0.4.0 (punto 12, SOLO verifica): registra nella diagnostica se la finestra di SystemUI (barra con i

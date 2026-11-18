@@ -207,7 +207,8 @@ public final class Updater {
     // Solo indirizzi HTTPS del repository del launcher (raw.githubusercontent.com/<repo SWI132>/main/releases/...).
     // =============================================================================================
 
-    private static final String OWN_RAW = "https://raw.githubusercontent.com/" + com.mg4.launcher.ui.Prefs.DEFAULT_REPO + "/main/";
+    /** 0.3.3: pubblico anche per animazioni.json e i pacchetti dell'animazione di ricarica. */
+    public static final String OWN_RAW = "https://raw.githubusercontent.com/" + com.mg4.launcher.ui.Prefs.DEFAULT_REPO + "/main/";
     private static final int MAX_FORCED_ATTEMPTS = 3;
 
     /** Un avviso di releases/avvisi.json. */
@@ -457,6 +458,11 @@ public final class Updater {
     }
 
     /** GET di un file piccolo (JSON) dal proprio repository. */
+    /** 0.3.3: GET di un file piccolo di testo del proprio repository (animazioni.json). */
+    public static String getText(String url) throws IOException {
+        return getSmall(url);
+    }
+
     private static String getSmall(String url) throws IOException {
         if (!url.startsWith(OWN_RAW)) throw new IOException("indirizzo non ammesso");
         HttpURLConnection c = (HttpURLConnection) new java.net.URL(url).openConnection();

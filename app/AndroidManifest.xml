@@ -10,6 +10,12 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- 0.3.2: per chiedere la chiamata al servizio dell'app telefono originale (protetto da questo permesso di sistema) -->
     <uses-permission android:name="android.permission.BIND_INCALL_SERVICE" />
+    <!-- 0.4.4: il launcher scrive il tema giorno/notte nel sistema (Settings.System SKIN_THEME_CONFIG, come le app SAIC EH32) -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!-- 1.0.4: luci dell'auto (posizione, anabbaglianti, leva) per i fari e il tema -->
+    <uses-permission android:name="android.car.permission.CAR_EXTERIOR_LIGHTS" />
+    <!-- 1.0.4: riportare davanti la finestra già aperta dopo la retromarcia -->
+    <uses-permission android:name="android.permission.REORDER_TASKS" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- 0.3.1: posizione approssimata (solo sull'auto) per calcolare alba e tramonto del tema automatico -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -23,6 +29,8 @@
     <uses-permission android:name="android.car.permission.CAR_INFO" />
     <!-- concessi automaticamente perché l'app è firmata con la chiave platform del sistema -->
     <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
+    <!-- 0.3.3: tasti multimediali al volante (avanti/indietro) visti dal launcher, per mandarli alla USB 2 -->
+    <uses-permission android:name="android.permission.SET_MEDIA_KEY_LISTENER" />
     <uses-permission android:name="android.permission.REAL_GET_TASKS" />
     <!-- avvio all'accensione e riconferma della home predefinita -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />

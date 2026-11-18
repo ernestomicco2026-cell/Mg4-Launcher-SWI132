@@ -58,7 +58,7 @@
     <string name="set_diag_sub" formatted="false">Valores leídos del coche y errores recientes</string>
     <string name="set_diag_title" formatted="false">Diagnóstico de servicios del coche</string>
     <string name="set_home_card" formatted="false">PANEL DEL COCHE</string>
-    <string name="set_inside_sub" formatted="false">Debajo de la exterior · «— °» si el coche no la proporciona</string>
+    <string name="set_inside_sub" formatted="false">Debajo de la exterior; «--» si el coche no la da</string>
     <string name="set_language" formatted="false">IDIOMA</string>
     <string name="set_menu_title" formatted="false">Ajustes</string>
     <string name="set_open_original" formatted="false">Abrir la pantalla de inicio original de MG</string>
@@ -404,7 +404,7 @@
     <string name="cb_scheduled_turn_off" formatted="false">Desactivar</string>
     <string name="set_inside_dashes" formatted="false">Debajo de la exterior; \"--\" si el coche no la proporciona</string>
     <string name="set_charge_limit" formatted="false">Límite de carga</string>
-    <string name="set_charge_limit_sub" formatted="false">En la barra de la batería y entre los botones de carga. Automático: solo si el coche lo admite</string>
+    <string name="set_charge_limit_sub" formatted="false">Automático: solo si el coche admite el mando</string>
     <string name="set_comfort" formatted="false">Calefacción de asientos y volante</string>
     <string name="set_comfort_sub" formatted="false">Automático: según la configuración del coche. Si lo tienes pero no aparece, elige Mostrar</string>
     <string name="set_quick_button" formatted="false">Botón arriba a la derecha</string>
@@ -471,4 +471,83 @@
     <string name="news_v032_3" formatted="false">Orden de los mandos superiores a elegir; el selector FM/DAB vuelve junto a los mandos, más grande</string>
     <string name="news_v032_4" formatted="false">Comprobación de funciones en Ajustes → Sistema: prueba qué funciona en el coche, solo leyendo</string>
     <string name="news_v032_5" formatted="false">Correcciones: tema día/noche, temperatura interior, Bluetooth al arrancar, envío de registros, lista de emisoras</string>
+    <string name="set_heat" formatted="false">Calefacción de asientos y volante</string>
+    <string name="set_heat_sub" formatted="false">Automático: según el equipamiento del coche. Si lo tienes y no aparece, elige Mostrar</string>
+    <string name="set_retro" formatted="false">Tras la marcha atrás, volver a la app anterior</string>
+    <string name="set_retro_sub" formatted="false">CarPlay, Android Auto (también por box), navegador o la app que estaba abierta</string>
+    <string name="set_quick" formatted="false">Botón arriba a la derecha</string>
+    <string name="set_quick_sub" formatted="false">Sin el botón, las fuentes muestran siempre su nombre</string>
+    <string name="quick_proj" formatted="false">CarPlay / Android Auto</string>
+    <string name="quick_app" formatted="false">Una app…</string>
+    <string name="quick_pick" formatted="false">Elige la app del botón</string>
+    <string name="news_v042_1" formatted="false">Tema día/noche automático también en el SWI69: sigue al coche, los faros o el amanecer y el atardecer, con 60 s de espera para los túneles</string>
+    <string name="news_v042_2" formatted="false">Tras la marcha atrás se vuelve solo a CarPlay, Android Auto o a la app anterior</string>
+    <string name="news_v042_3" formatted="false">Al arrancar vuelve la última fuente de audio; radio y Bluetooth arrancan de forma fiable, con carátula y mandos del teléfono</string>
+    <string name="news_v042_4" formatted="false">Gráficos: faros encendidos en el coche, presión más grande, FM/DAB bajo Radio, iconos 360° más claros, temperatura exterior compacta</string>
+    <string name="news_v042_5" formatted="false">Nuevos ajustes: calefacción de asientos y volante, límite de carga, botón arriba a la derecha; actualizaciones y avisos automáticos</string>
+    <string name="cb_sched" formatted="false">Programada</string>
+    <string name="cb_sched_title" formatted="false">Carga programada</string>
+    <string name="cb_sched_msg" formatted="false">Con el cable conectado, la carga empieza a la hora de inicio. «Hasta el límite» sigue tras la hora de fin hasta el límite de carga.</string>
+    <string name="sched_off" formatted="false">Apagada</string>
+    <string name="sched_to_limit" formatted="false">Hasta el límite</string>
+    <string name="sched_time" formatted="false">Horario…</string>
+    <string name="sched_start" formatted="false">Inicio de la carga</string>
+    <string name="sched_end" formatted="false">Fin de la carga</string>
+    <string name="chk_fog_window" formatted="false">Ventana del testigo antiniebla</string>
+    <string name="news_v043_1" formatted="false">Tema automático: si el coche dice siempre «día» o siempre «noche» en contra del sol, se usan los faros y el amanecer/atardecer</string>
+    <string name="news_v043_2" formatted="false">Segundo puerto USB como fuente separada (USB 1 y USB 2); lista completa de emisoras del servicio de radio</string>
+    <string name="news_v043_3" formatted="false">Recuadro bajo la emisora a elegir: música, favoritos del teléfono (llamada con un toque) o apps</string>
+    <string name="news_v043_4" formatted="false">Orden de los controles superiores intercambiable; selector FM/DAB de nuevo junto a los controles, más grande</string>
+    <string name="news_v043_5" formatted="false">Comprobación de funciones en Ajustes → Sistema; el Bluetooth al encender espera al teléfono; mejoras de estabilidad</string>
+    <string name="set_nav_default" formatted="false">Navegador predeterminado</string>
+    <string name="set_nav_default_sub" formatted="false">Qué abre el panel del mapa al tocar \"Ir\"; con CarPlay/Android Auto conectado también aparece como opción</string>
+    <string name="nav_default_mg" formatted="false">Navegador MG</string>
+    <string name="nav_default_phone" formatted="false">CarPlay / Android Auto</string>
+    <string name="set_top_button" formatted="false">Botón junto a Mapa/Multimedia</string>
+    <string name="set_top_button_sub" formatted="false">Un tercer botón que abre una app a elegir; CarPlay y Android Auto están en la barra inferior</string>
+    <string name="top_app" formatted="false">Una app…</string>
+    <string name="top_none" formatted="false">Ninguno</string>
+    <string name="top_pick_app" formatted="false">App del botón superior derecho</string>
+    <string name="set_sources" formatted="false">Fuentes de audio</string>
+    <string name="set_sources_sub" formatted="false">Qué fuentes mostrar arriba en el panel Multimedia (al menos una)</string>
+    <string name="nav_other_app" formatted="false">Otra app…</string>
+    <string name="nav_other_app_sub" formatted="false">Apps de navegación instaladas en el coche</string>
+    <string name="nav_no_apps" formatted="false">Ninguna app de navegación instalada además de la de MG</string>
+    <string name="store_install" formatted="false">Instalar MG4 Store</string>
+    <string name="store_install_sub" formatted="false">La tienda de apps MG4 está dentro del launcher: se instala desde aquí y luego se actualiza sola</string>
+    <string name="store_installing" formatted="false">Instalando la tienda…</string>
+    <string name="store_installed" formatted="false">MG4 Store instalado</string>
+    <string name="store_failed" formatted="false">No se pudo instalar</string>
+    <string name="set_charge_anim" formatted="false">Animación de carga</string>
+    <string name="set_charge_anim_sub" formatted="false">Al conectar el cable el coche se anima; el paquete del color elegido se descarga solo</string>
+    <string name="anim_test" formatted="false">Probar animación de carga</string>
+    <string name="anim_test_sub" formatted="false">Muestra las fases una tras otra; sin paquete usa animazione-&lt;color&gt;.zip del USB</string>
+    <string name="anim_test_missing" formatted="false">Sin paquete: copia animazione-&lt;color&gt;.zip en el USB</string>
+    <string name="chk_theme_system" formatted="false">Tema del sistema</string>
+    <string name="chk_lights" formatted="false">Faros</string>
+    <string name="chk_charge_anim" formatted="false">Animación de carga</string>
+    <string name="check_lights_on">Enciende las luces de posición (%s s)</string>
+    <string name="news_v104_1" formatted="false">El launcher decide ahora el tema día/noche y lo aplica a todo el sistema (Clima, apps MG, panel)</string>
+    <string name="news_v104_2" formatted="false">Nueva pantalla: Mapa/Multimedia abajo, FM/DAB bajo Radio, botones de fuente más grandes</string>
+    <string name="news_v104_3" formatted="false">Animación de carga al conectar el cable, y MG4 Store incluido en el launcher</string>
+    <string name="news_v104_4" formatted="false">Fuentes de audio y app de navegación a elegir; faros leídos del coche; radio más fiable al arrancar</string>
+    <string name="news_v104_5" formatted="false">Desinstalación más segura: la pantalla de inicio MG original siempre vuelve, aunque el launcher se quite desde el menú Apps</string>
+    <string name="news_v104_6" formatted="false">Ajustes: al cambiar una opción la página se queda donde estaba · Apps: mantén pulsada una app que instalaste para desinstalarla</string>
+    <string name="anim_preparing" formatted="false">Preparando la animación de carga: solo la primera vez, 2–3 minutos. Empieza sola cuando esté lista.</string>
+    <string name="anim_prepare_failed">No se pudo preparar la animación de carga (%1$s). Los detalles están en el registro.</string>
+    <string name="app_uninstall" formatted="false">Desinstalar</string>
+    <string name="app_uninstall_q">¿Quieres desinstalar %1$s?</string>
+    <string name="app_uninstall_done">%1$s desinstalada</string>
+    <string name="app_uninstall_failed">No se pudo desinstalar %1$s</string>
+    <string name="set_car_panel" formatted="false">Recuadro del coche</string>
+    <string name="set_car_panel_sub" formatted="false">Autonomía, coche dibujado, neumáticos y carga. Si lo ocultas, en su lugar va un widget</string>
+    <string name="set_car_widget" formatted="false">En lugar del recuadro del coche</string>
+    <string name="set_car_widget_sub" formatted="false">Con el Mapa aquí, a la derecha queda Multimedia</string>
+    <string name="widget_clock" formatted="false">Reloj y fecha</string>
+    <string name="news_v033_1" formatted="false">Desinstalación segura: \"Desinstalar\" primero reactiva la pantalla de inicio original y comprueba que esté activa</string>
+    <string name="news_v033_2" formatted="false">Nueva pantalla de inicio como la SWI68: FM/DAB sobre la lista de emisoras, CarPlay y Android Auto en la barra inferior</string>
+    <string name="news_v033_3" formatted="false">Coche dibujado a partir del modelo 3D y animación al conectar el cable de carga</string>
+    <string name="news_v033_4" formatted="false">Recuadro del coche a tu gusto: ocúltalo y pon en su lugar reloj, mapa, multimedia o favoritos del teléfono</string>
+    <string name="news_v033_5" formatted="false">MG4 Store incluido; el tema día/noche vale para todo el sistema; los ajustes se quedan donde estaban</string>
+    <string name="news_v033_6" formatted="false">Botones del volante con la USB 2 y radio al arrancar más fiables; las apps que instalaste se desinstalan con una pulsación larga</string>
 </resources>

@@ -47,6 +47,12 @@ public final class SettingsView extends FrameLayout {
 
         /** Elenco delle app installate (escluso noi), per scegliere "un'altra app" per il tasto 360. */
         java.util.List<com.mg4.launcher.apps.AppCatalog.App> allLaunchableApps();
+
+        /** 1.0.4: app installate che gestiscono la navigazione (per "App di navigazione"). */
+        java.util.List<com.mg4.launcher.apps.AppCatalog.App> navCandidateApps();
+
+        /** 1.0.4: prova dell'animazione di ricarica sulla home. */
+        void testChargeAnimation();
     }
 
     // 0.4.0 (punto 11): impostazioni riorganizzate come nella SWI68 - stesse 7 sezioni, ordine e testi
@@ -178,6 +184,8 @@ public final class SettingsView extends FrameLayout {
                 if (section == idx && !diagOpen) return;
                 section = idx;
                 diagOpen = false;
+                curScroll = null;      // sezione nuova: si parte in cima
+                keptSection = -1;
                 buildMenu();
                 showSection(idx);
             });
@@ -263,8 +271,24 @@ public final class SettingsView extends FrameLayout {
     // Contenuto delle sezioni
     // =========================================================================================
 
+    /**
+     * 1.0.4 (issue #33): posizione della pagina. Cambiando un'opzione la sezione si ricostruisce: si rimette lo
+     * scorrimento dov'era. Statico perché alcune opzioni (tema, dimensione) ricreano tutte le impostazioni: in quel caso
+     * vale se la ricostruzione arriva entro pochi secondi. Cambiando sezione dal menu si parte sempre in cima.
+     */
+    private static int keptSection = -1, keptY;
+    private static long keptAt;
+    private ScrollView curScroll;
+    private int curKey = -1;
+
     private void showSection(int s) {
         Context c = getContext();
+        int key = s + (diagOpen ? 100 : 0);
+        int keep = 0;
+        if (curScroll != null && curKey == key) keep = curScroll.getScrollY();
+        else if (curScroll == null && keptSection == key && SystemClock.uptimeMillis() - keptAt < 5000) keep = keptY;
+        curScroll = null;
+        curKey = key;
         content.removeAllViews();
         diagText = null;
         logUploadSub = null;
@@ -292,6 +316,21 @@ public final class SettingsView extends FrameLayout {
         ScrollView sv = new ScrollView(c);
         sv.setVerticalScrollBarEnabled(false);
         sv.setOverScrollMode(OVER_SCROLL_NEVER);
+        curScroll = sv;
+        // 0.4.4 (correzione A, issue #33): la posizione non si salva più mentre si scorre (valeva 5 s e chi restava
+        // fermo più a lungo tornava in cima): si salva quando le impostazioni vecchie si chiudono (onDetachedFromWindow)
+        if (keep > 0) {
+            final int y0 = keep;
+            // dopo il layout (prima la pagina ha altezza 0 e lo scorrimento verrebbe azzerato), senza animazione
+            sv.addOnLayoutChangeListener(new OnLayoutChangeListener() {
+                @Override
+                public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
+                    if (sv.getChildCount() == 0 || sv.getChildAt(0).getHeight() == 0) return;
+                    sv.removeOnLayoutChangeListener(this);
+                    sv.scrollTo(0, y0);
+                }
+            });
+        }
         LinearLayout col = Ui.column(c);
         col.setPadding(0, dp(26), 0, 0);
         sv.addView(col, new FrameLayout.LayoutParams(-1, -2));
@@ -317,12 +356,23 @@ public final class SettingsView extends FrameLayout {
             final int idx = i;
             sw.addView(swatch(c, Prefs.CAR_COLOR_VALUES[i], i == sel, Prefs.CAR_COLORS[i], v -> {
                 prefs.setCarColorIndex(idx);
+                // 1.0.4: col nuovo colore si scarica il suo pacchetto e si cancella il vecchio
+                if (prefs.chargeAnim()) com.mg4.launcher.svc.ChargePack.ensure(c, Prefs.CAR_COLORS[idx], true);
                 host.settingsChanged(false);
                 showSection(SEC_CAR);
             }), Ui.margins(Ui.lp(tp(72), tp(72)), 0, 0, dp(16), 0));
         }
         col.addView(sw, top(14));
         col.addView(Ui.text(c, Prefs.CAR_COLORS[sel], 18, t.sub, Ui.REGULAR), top(14));
+        // 1.0.4 (punto F): animazione di ricarica (pacchetto del colore scelto, scaricato a parte)
+        LinearLayout animCard = card(c);
+        animCard.addView(row(c, L.s(R.string.set_charge_anim), L.s(R.string.set_charge_anim_sub),
+                toggle(c, prefs.chargeAnim(), on -> {
+                    prefs.setChargeAnim(on);
+                    if (on) com.mg4.launcher.svc.ChargePack.ensure(c, Prefs.CAR_COLORS[prefs.carColorIndex()], true);
+                    host.settingsChanged(false);
+                }), true));
+        col.addView(animCard, top(14));
 
         // cerchi (0.9.3): miniature come i colori, quelli della foto sono "di serie"
         col.addView(label(c, L.s(R.string.set_wheels).toUpperCase(java.util.Locale.getDefault())), top(30));
@@ -445,17 +495,129 @@ public final class SettingsView extends FrameLayout {
                     host.settingsChanged(true);
                     showSection(SEC_HOME);
                 }), false));
-        // 0.3.2 (punto 9, SWI68 issue #25): ordine dei comandi in alto nel riquadro: sorgenti poi Mappa/Media (attuale) o il contrario
-        String[] ordNames = {L.s(R.string.top_order_current), L.s(R.string.top_order_swapped)};
-        card.addView(row(c, L.s(R.string.set_top_order), L.s(R.string.set_top_order_sub),
-                choices(c, ordNames, prefs.topSwapped() ? 1 : 0, i -> {
-                    if ((i == 1) == prefs.topSwapped()) return;
-                    prefs.setTopSwapped(i == 1);
-                    com.mg4.launcher.svc.Diag.put("home.ordineAlto", (i == 1 ? "scambiato" : "attuale") + " (scelto nelle impostazioni)");
+        // 0.3.3 (issue SWI132 #4): riquadro auto Mostra (predefinito) / Nascondi; se nascosto, un widget al suo posto
+        boolean carShown = prefs.carPanelShown();
+        card.addView(row(c, L.s(R.string.set_car_panel), L.s(R.string.set_car_panel_sub),
+                choices(c, new String[]{L.s(R.string.fog_show), L.s(R.string.fog_hide)}, carShown ? 0 : 1, i -> {
+                    if ((i == 0) == prefs.carPanelShown()) return;
+                    prefs.setCarPanelShown(i == 0);
+                    com.mg4.launcher.svc.Diag.put("home.riquadroAuto", (i == 0 ? "mostrato" : "nascosto") + " (scelto nelle impostazioni)");
                     host.settingsChanged(true);
                     showSection(SEC_HOME);
-                }), true));
+                }), carShown));
+        if (!carShown) {
+            String[] wVals = {Prefs.WIDGET_CLOCK, Prefs.WIDGET_MAP, Prefs.WIDGET_MEDIA, Prefs.WIDGET_PHONE};
+            String[] wNames = {L.s(R.string.widget_clock), L.s(R.string.tab_map), L.s(R.string.tab_media), L.s(R.string.tile_phone)};
+            card.addView(row(c, L.s(R.string.set_car_widget), L.s(R.string.set_car_widget_sub),
+                    choices(c, wNames, java.util.Arrays.asList(wVals).indexOf(prefs.carWidget()), i -> {
+                        prefs.setCarWidget(wVals[i]);
+                        com.mg4.launcher.svc.Diag.put("home.riquadroAuto", "nascosto · widget " + wVals[i] + " (scelto nelle impostazioni)");
+                        host.settingsChanged(true);
+                        showSection(SEC_HOME);
+                    }), true));
+        }
         col.addView(card, topFull(14));
+
+        // 1.0.0 (punto 11): riquadro mappa/media/CarPlay/AA - il navigatore che si apre dal riquadro di casa
+        col.addView(label(c, L.s(R.string.set_nav_default)), top(30));
+        card = card(c);
+        // 0.4.4 (issue #27, dalla SWI68 1.0.4): app di navigazione. Sulla SWI69 non c'è il navigatore MG: si sceglie tra
+        // CarPlay/Android Auto, un'app installata sull'auto o Automatico (telefono se collegato, altrimenti il primo navigatore)
+        String navPref = prefs.navApp();
+        boolean navOther = !Prefs.NAV_AUTO.equals(navPref) && !Prefs.NAV_MG.equals(navPref) && !Prefs.NAV_PHONE.equals(navPref);
+        String otherName = navOther ? com.mg4.launcher.ui.Cam360.label(c, navPref) : L.s(R.string.nav_other_app);
+        String[] navNames = {L.s(R.string.nav_default_phone), otherName, L.s(R.string.unit_auto)};
+        int navSel = navOther ? 1 : Prefs.NAV_PHONE.equals(navPref) ? 0 : 2;
+        LinearLayout navRow = Ui.row(c);
+        for (int i = 0; i < navNames.length; i++) {
+            final int idx = i;
+            TextView ch = choice(c, navNames[i], i == navSel, v -> {
+                if (idx == 1) {   // apre sempre la scelta dell'app
+                    pickNavApp(c);
+                    return;
+                }
+                if (idx == navSel) return;
+                prefs.setNavApp(idx == 0 ? Prefs.NAV_PHONE : Prefs.NAV_AUTO);
+                host.settingsChanged(false);
+                showSection(SEC_HOME);
+            });
+            ch.setPadding(tp(20), 0, tp(20), 0);
+            if (i != navSel) ch.setBackground(Ui.pressable(c, t.panel, 16 * Ui.K, t));
+            navRow.addView(ch, Ui.margins(new LinearLayout.LayoutParams(-2, tp(60)), i == 0 ? 0 : dp(8), 0, 0, 0));
+        }
+        card.addView(row(c, L.s(R.string.set_nav_default), L.s(R.string.set_nav_default_sub), navRow, false));
+        // 1.0.4 (issue #28): sorgenti audio da mostrare (almeno una)
+        // 0.4.4 (SWI69): "Online" solo se l'auto ha davvero la sorgente (di solito sulla SWI69 non c'è)
+        boolean onl = com.mg4.launcher.svc.MediaClient.onlinePossible;
+        int[] srcIds = onl ? new int[]{com.mg4.launcher.svc.MediaClient.SRC_RADIO, com.mg4.launcher.svc.MediaClient.SRC_USB,
+                com.mg4.launcher.svc.MediaClient.SRC_BT, com.mg4.launcher.svc.MediaClient.SRC_ONLINE}
+                : new int[]{com.mg4.launcher.svc.MediaClient.SRC_RADIO, com.mg4.launcher.svc.MediaClient.SRC_USB,
+                com.mg4.launcher.svc.MediaClient.SRC_BT};
+        String[] srcNames = onl ? new String[]{L.s(R.string.src_radio), "USB", "Bluetooth", L.s(R.string.src_online)}
+                : new String[]{L.s(R.string.src_radio), "USB", "Bluetooth"};
+        LinearLayout srcSel = Ui.row(c);
+        for (int i = 0; i < srcIds.length; i++) {
+            final int src = srcIds[i];
+            boolean on = prefs.sourceShown(src);
+            TextView ch = choice(c, srcNames[i], on, v -> {
+                boolean now = prefs.sourceShown(src);
+                if (now) {   // almeno una sorgente deve restare
+                    int left = 0;
+                    for (int x : srcIds) if (prefs.sourceShown(x)) left++;
+                    if (left <= 1) return;
+                }
+                prefs.setSourceShown(src, !now);
+                com.mg4.launcher.svc.Diag.put("home.sorgenti", sourcesTxt(srcIds, srcNames));
+                host.settingsChanged(true);
+                showSection(SEC_HOME);
+            });
+            ch.setPadding(tp(20), 0, tp(20), 0);
+            if (!on) ch.setBackground(Ui.pressable(c, t.panel, 16 * Ui.K, t));
+            srcSel.addView(ch, Ui.margins(new LinearLayout.LayoutParams(-2, tp(60)), i == 0 ? 0 : dp(8), 0, 0, 0));
+        }
+        card.addView(row(c, L.s(R.string.set_sources), L.s(R.string.set_sources_sub), srcSel, false));
+        // 1.0.2 (issue #23): pulsante in alto a destra del riquadro: CarPlay/Android Auto (come prima), un'app, nessuno
+        String top = prefs.topButton();
+        boolean topApp = top.startsWith(Prefs.TOP_APP);
+        String topAppLabel = topApp ? Cam360.label(c, top.substring(Prefs.TOP_APP.length())) : L.s(R.string.top_app);
+        // 1.0.4: il pulsante sta accanto a Mappa/Media, in basso; CarPlay/Android Auto sono nella barra in basso a destra
+        String[] topNames = {L.s(R.string.top_none), topAppLabel};
+        int topSel = topApp ? 1 : 0;
+        LinearLayout topRow = Ui.row(c);
+        for (int i = 0; i < topNames.length; i++) {
+            final int idx = i;
+            boolean on = i == topSel;
+            TextView ch = choice(c, topNames[i], on, v -> {
+                if (idx == 1) { pickTopApp(c); return; }   // apre sempre l'elenco, anche se già scelto
+                if (idx == topSel) return;
+                prefs.setTopButton(Prefs.TOP_NONE);
+                host.settingsChanged(true);
+                showSection(SEC_HOME);
+            });
+            ch.setPadding(tp(20), 0, tp(20), 0);
+            if (!on) ch.setBackground(Ui.pressable(c, t.panel, 16 * Ui.K, t));
+            topRow.addView(ch, Ui.margins(new LinearLayout.LayoutParams(-2, tp(60)), i == 0 ? 0 : dp(8), 0, 0, 0));
+        }
+        card.addView(row(c, L.s(R.string.set_top_button), L.s(R.string.set_top_button_sub), topRow, true));
+        col.addView(card, topFull(14));
+    }
+
+    /** Elenco delle app installate per il pulsante in alto a destra. */
+    private void pickTopApp(Context c) {
+        java.util.List<com.mg4.launcher.apps.AppCatalog.App> apps = host.allLaunchableApps();
+        String[] names = new String[apps.size()];
+        for (int i = 0; i < apps.size(); i++) names[i] = apps.get(i).label;
+        String cur = prefs.topButton();
+        int sel = -1;
+        if (cur.startsWith(Prefs.TOP_APP)) {
+            String pkg = cur.substring(Prefs.TOP_APP.length());
+            for (int i = 0; i < apps.size(); i++) if (apps.get(i).packageName.equals(pkg)) sel = i;
+        }
+        Confirm.pick(this, t, L.s(R.string.top_pick_app), "", names, sel, L.s(R.string.btn_cancel), i -> {
+            prefs.setTopButton(Prefs.TOP_APP + apps.get(i).packageName);
+            host.settingsChanged(true);
+            showSection(SEC_HOME);
+        });
     }
 
     private void buildBar(Context c, LinearLayout col) {
@@ -502,28 +664,6 @@ public final class SettingsView extends FrameLayout {
                     host.settingsChanged(true);
                     showSection(SEC_BAR);
                 }), false));
-        // 0.3.1 (SWI68 #23): pulsante rapido in alto a destra: Android Auto/CarPlay, un'app a scelta, nessuno
-        String quick = prefs.quickButton();
-        boolean quickApp = quick.startsWith(Prefs.QUICK_APP);
-        String quickLabel = quickApp ? Cam360.label(c, quick.substring(Prefs.QUICK_APP.length())) : L.s(R.string.cam360_app);
-        String[] quickNames = {"Android Auto / CarPlay", quickLabel, L.s(R.string.quick_none)};
-        int quickSel = quickApp ? 1 : Prefs.QUICK_NONE.equals(quick) ? 2 : 0;
-        LinearLayout quickRow = Ui.row(c);
-        for (int i = 0; i < quickNames.length; i++) {
-            final int idx = i;
-            boolean on = i == quickSel;
-            TextView ch = choice(c, quickNames[i], on, v -> {
-                if (idx == 1) { pickQuickApp(); return; }
-                if (idx == quickSel) return;
-                prefs.setQuickButton(idx == 0 ? Prefs.QUICK_PROJ : Prefs.QUICK_NONE);
-                host.settingsChanged(true);
-                showSection(SEC_BAR);
-            });
-            ch.setPadding(tp(20), 0, tp(20), 0);
-            if (!on) ch.setBackground(Ui.pressable(c, t.panel, 16 * Ui.K, t));
-            quickRow.addView(ch, Ui.margins(new LinearLayout.LayoutParams(-2, tp(60)), i == 0 ? 0 : dp(8), 0, 0, 0));
-        }
-        card.addView(row(c, L.s(R.string.set_quick_button), L.s(R.string.set_quick_button_sub), quickRow, false));
         // 0.3.1 (punto 5): dopo la retromarcia torna all'app di prima
         card.addView(row(c, L.s(R.string.set_reverse_return), L.s(R.string.set_reverse_return_sub),
                 toggle(c, prefs.reverseReturn(), on -> prefs.setReverseReturn(on)), false));
@@ -571,18 +711,6 @@ public final class SettingsView extends FrameLayout {
         }
         card.addView(row(c, L.s(R.string.set_cam360), L.s(R.string.set_cam360_sub), camRow, true));
         col.addView(card, topFull(14));
-    }
-
-    /** Elenco delle app installate per il pulsante rapido in alto a destra. */
-    private void pickQuickApp() {
-        java.util.List<com.mg4.launcher.apps.AppCatalog.App> apps = host.allLaunchableApps();
-        String[] names = new String[apps.size()];
-        for (int i = 0; i < apps.size(); i++) names[i] = apps.get(i).label;
-        Confirm.pick(this, t, L.s(R.string.cam360_pick_app), "", names, -1, L.s(R.string.btn_cancel), i -> {
-            prefs.setQuickButton(Prefs.QUICK_APP + apps.get(i).packageName);
-            host.settingsChanged(true);
-            showSection(SEC_BAR);
-        });
     }
 
     /**
@@ -650,6 +778,35 @@ public final class SettingsView extends FrameLayout {
                 });
     }
 
+    private String sourcesTxt(int[] ids, String[] names) {
+        StringBuilder sb = new StringBuilder("mostrate:");
+        for (int i = 0; i < ids.length; i++) if (prefs.sourceShown(ids[i])) sb.append(' ').append(names[i]);
+        return sb.toString();
+    }
+
+    /**
+     * 1.0.4 (issue #27): scelta dell'app di navigazione tra le app installate che gestiscono la navigazione
+     * (Google Maps, Waze, ABRP, OsmAnd...): quelle che aprono un indirizzo "geo:" o "google.navigation:" più quelle note.
+     */
+    private void pickNavApp(Context c) {
+        java.util.List<com.mg4.launcher.apps.AppCatalog.App> apps = host.navCandidateApps();
+        if (apps.isEmpty()) {
+            android.widget.Toast.makeText(c, L.s(R.string.nav_no_apps), android.widget.Toast.LENGTH_LONG).show();
+            return;
+        }
+        String[] names = new String[apps.size()];
+        int sel = -1;
+        for (int i = 0; i < apps.size(); i++) {
+            names[i] = apps.get(i).label;
+            if (apps.get(i).packageName.equals(prefs.navApp())) sel = i;
+        }
+        Confirm.pick(this, t, L.s(R.string.nav_other_app), L.s(R.string.nav_other_app_sub), names, sel, L.s(R.string.btn_cancel), i -> {
+            prefs.setNavApp(apps.get(i).packageName);
+            com.mg4.launcher.svc.Diag.put("nav.appScelta", apps.get(i).packageName + " (dalle impostazioni)");
+            host.settingsChanged(false);
+            showSection(SEC_HOME);
+        });
+    }
 
     /** Elenco delle app installate (escluso noi) per scegliere "un'altra app" per il tasto 360. */
     private void pickCam360App(Context c) {
@@ -803,6 +960,7 @@ public final class SettingsView extends FrameLayout {
             f.addView(choice(c, m[1], m[0].equals(mode), v -> {
                 if (m[0].equals(prefs.themeMode())) return;
                 prefs.setThemeMode(m[0]);
+                com.mg4.launcher.svc.DayNight.syncSystem(c, "scelta manuale " + m[0]);
                 host.settingsChanged(true);
             }));
         }
@@ -1019,6 +1177,28 @@ public final class SettingsView extends FrameLayout {
         card.addView(dr);
         col.addView(card, topFull(14));
 
+        // 1.0.4 (punto D): MG4 Store. Se l'utente l'ha tolto il launcher non lo rimette da solo: si reinstalla da qui
+        if (com.mg4.launcher.svc.StoreSetup.installedCode(c) < 0) {
+            card = card(c);
+            View stBtn = button(c, L.s(R.string.store_install), v -> {
+                android.widget.Toast.makeText(c, L.s(R.string.store_installing), android.widget.Toast.LENGTH_SHORT).show();
+                com.mg4.launcher.svc.StoreSetup.install(c, true, (ok, msg) -> post(() -> {
+                    com.mg4.launcher.svc.Diag.put("store", ok ? "installato ora dalle impostazioni" : "installazione non riuscita (" + msg + ")");
+                    android.widget.Toast.makeText(c, L.s(ok ? R.string.store_installed : R.string.store_failed), android.widget.Toast.LENGTH_LONG).show();
+                    if (isAttachedToWindow()) showSection(SEC_SYSTEM);
+                }));
+            });
+            card.addView(row(c, L.s(R.string.store_install), L.s(R.string.store_install_sub), stBtn, true));
+            col.addView(card, topFull(14));
+        }
+
+        // 1.0.4 (punto F5): prova dell'animazione di ricarica (modalità tecnica): pacchetto scaricato oppure zip su chiavetta
+        card = card(c);
+        View animBtn = button(c, L.s(R.string.anim_test), v -> host.testChargeAnimation());
+        card.addView(row(c, L.s(R.string.anim_test), L.s(R.string.anim_test_sub), animBtn, true));
+        col.addView(card, topFull(14));
+
+        // 0.4.3: Controllo funzioni, in sola lettura
         // 0.3.2 (punto 11): Controllo funzioni, in sola lettura
         card = card(c);
         View chkBtn = button(c, L.s(R.string.check_start), v -> CheckPanel.show(this, t));
@@ -1335,6 +1515,13 @@ public final class SettingsView extends FrameLayout {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         main.removeCallbacks(refreshTick);
+        // 0.4.4 (correzione A): la posizione si salva quando queste impostazioni si chiudono, così se un'opzione le
+        // ricrea tutte (tema, dimensione, lingua, opzioni Home) la nuova pagina riparte da lì
+        if (curScroll != null) {
+            keptSection = curKey;
+            keptY = curScroll.getScrollY();
+            keptAt = SystemClock.uptimeMillis();
+        }
         host.updater().setListener(null);
         com.mg4.launcher.svc.LogoPacks.get(getContext()).removeListener(logoListener);
     }

@@ -116,6 +116,7 @@ public final class DayNight {
             applied = e.day;
             source = e.source;
             lastChange = stamp() + " (avvio)";
+            syncSystem(c, "avvio");
         } else if (e.day != applied) {
             if (pending == null || pending != e.day) {
                 pending = e.day;
@@ -125,6 +126,7 @@ public final class DayNight {
                 source = e.source;
                 lastChange = stamp();
                 pending = null;
+                syncSystem(c, "decisione del launcher (" + e.source + ")");
             }
         } else {
             pending = null;
@@ -193,10 +195,9 @@ public final class DayNight {
                 .append(" (").append(sun.where).append(')');
         if (!Double.isNaN(elev)) d.append(" · sole a ").append(Math.round(elev)).append('°');
         d.append(" · home originale: nessun segnale (solo temi)");
-        if (uiModeMoved && !stuckNow) {
-            e.day = night != Configuration.UI_MODE_NIGHT_YES;
-            e.source = "uiMode";
-        } else if (twilight && (lb >= 0 || pl >= 0)) {
+        // 0.3.3 (SWI68 1.0.4 punto A, SWI69 0.4.4): uiMode non è più una fonte, resta solo nel log. Il tema lo decide
+        // il launcher (fari → alba/tramonto) e lo scrive nel sistema (syncSystem, SKIN_THEME_CONFIG)
+        if (twilight && (lb >= 0 || pl >= 0)) {
             e.day = !(lb == 1 || pl == 1);
             e.source = "fari (vicino a " + (Math.abs(minNow - sun.set) <= TWILIGHT_MIN ? "tramonto" : "alba") + ")";
         } else {
@@ -208,7 +209,91 @@ public final class DayNight {
         return e;
     }
 
-    // ---- uiMode bloccato (0.3.2, come SWI68 1.0.3) -------------------------------------------------
+    // ---- 0.3.3 (da SWI69 0.4.4, EH32): il tema si scrive nel sistema come fanno le app SAIC ----------------
+
+    /** Impostazione di sistema delle app SAIC EH32 (SWI69/SWI131/SWI132): 0 = scuro (notte), 1 = chiaro (giorno). */
+    public static final String SKIN_KEY = "SKIN_THEME_CONFIG";
+    /** Avviso che fa ricaricare il tema a launcher SAIC, SystemUI, Clima e alle altre app SAIC. */
+    public static final String SKIN_ACTION = "com.saicmotor.changeSkin";
+    private static volatile String sysTxt = "non ancora scritto";
+    private static volatile boolean appliedOk = true;
+    private static final android.os.Handler MAIN = new android.os.Handler(android.os.Looper.getMainLooper());
+
+    private static Boolean wanted(Context c) {
+        String mode = c.getApplicationContext().getSharedPreferences("mg4launcher", Context.MODE_PRIVATE).getString("theme", "auto");
+        return "giorno".equals(mode) ? Boolean.TRUE : "notte".equals(mode) ? Boolean.FALSE : applied;
+    }
+
+    /**
+     * Scrive nel sistema il tema effettivo (scelta manuale Giorno/Notte, altrimenti quello automatico): Settings.System
+     * SKIN_THEME_CONFIG (0 scuro, 1 chiaro) e l'avviso com.saicmotor.changeSkin, come il servizio CarAdapterService e le
+     * Impostazioni SAIC. Si scrive solo se il valore è diverso: all'avvio, alle decisioni del launcher e alla scelta
+     * manuale; mai a ogni giro. Log tema.sistema.
+     */
+    public static void syncSystem(Context ctx, String why) {
+        Context c = ctx.getApplicationContext();
+        Boolean day = wanted(c);
+        if (day == null) return;
+        String at = new SimpleDateFormat("HH:mm:ss", Locale.ITALY).format(new Date());
+        int want = day ? 1 : 0;
+        android.content.ContentResolver cr = c.getContentResolver();
+        String auto = "";
+        try {
+            auto = " · tema automatico SAIC (screen_skin_mode) " + android.provider.Settings.System.getInt(cr, "screen_skin_mode", -1);
+        } catch (Throwable ignored) {
+        }
+        try {
+            int now = android.provider.Settings.System.getInt(cr, SKIN_KEY, -1);
+            if (now == want) {
+                sysTxt = "già " + (day ? "giorno" : "notte") + " (" + SKIN_KEY + " " + now + ") · controllato alle " + at + " · " + why + auto;
+            } else {
+                boolean ok = android.provider.Settings.System.putInt(cr, SKIN_KEY, want);
+                c.sendBroadcast(new android.content.Intent(SKIN_ACTION));
+                int after = android.provider.Settings.System.getInt(cr, SKIN_KEY, -1);
+                sysTxt = "scritto " + (day ? "giorno" : "notte") + " (" + SKIN_KEY + " " + now + " → " + want + ", avviso " + SKIN_ACTION
+                        + ") · alle " + at + " · esito " + (ok && after == want ? "ok" : "errore (il sistema dice " + after + ")") + " · " + why + auto;
+            }
+        } catch (Throwable e) {
+            sysTxt = "scritto " + (day ? "giorno" : "notte") + " · alle " + at + " · esito errore " + e.getClass().getSimpleName() + " · " + why + auto;
+        }
+        Diag.put("tema.sistema", sysTxt);
+        // 3 s dopo si rilegge: se il servizio SAIC lo ha riscritto, si vede nel log (nessuna riscrittura a ripetizione)
+        MAIN.postDelayed(() -> {
+            int v = -1;
+            try {
+                v = android.provider.Settings.System.getInt(c.getContentResolver(), SKIN_KEY, -1);
+            } catch (Throwable ignored) {
+            }
+            appliedOk = v == want;
+            Diag.put("tema.sistema", sysTxt + " · dopo 3 s: " + (v == 1 ? "giorno" : v == 0 ? "notte" : "non leggibile")
+                    + (appliedOk ? "" : " (DIVERSO da quello scritto)"));
+        }, 3000);
+    }
+
+    /** Tema scritto nel sistema adesso: true giorno, false notte, null non leggibile (Controllo funzioni). */
+    public static Boolean systemDay(Context c) {
+        try {
+            int v = android.provider.Settings.System.getInt(c.getContentResolver(), SKIN_KEY, -1);
+            return v == 1 ? Boolean.TRUE : v == 0 ? Boolean.FALSE : null;
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    public static boolean systemApplied() {
+        return appliedOk;
+    }
+
+    /** Per il Controllo funzioni: [tema voluto (true giorno), tema del sistema riletto]. */
+    public static Boolean[] systemCheck(Context c) {
+        return new Boolean[]{wanted(c), systemDay(c)};
+    }
+
+    public static String systemTxt() {
+        return sysTxt;
+    }
+
+    // ---- uiMode bloccato (0.3.2, come SWI68 1.0.3; dalla 0.3.3 solo nel log) -------------------------------------------------
 
     private static final long UI_STUCK_ON_MS = 12L * 60 * 60 * 1000;
     /** Intervallo massimo contato tra due controlli (il tema si controlla ogni 10 s): il tempo a auto spenta non conta. */

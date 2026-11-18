@@ -125,7 +125,9 @@ public final class Prefs {
     public static final String NAV_AUTO = "auto", NAV_MG = "mg", NAV_PHONE = "phone";
 
     public String navApp() {
-        return sp.getString("navApp", NAV_AUTO);
+        // 0.4.4: sulla SWI69 non c'è il navigatore MG: predefinito Automatico (anche per un vecchio valore "mg")
+        String v = sp.getString("navApp", NAV_AUTO);
+        return NAV_MG.equals(v) ? NAV_AUTO : v;
     }
 
     public void setNavApp(String v) {
@@ -432,16 +434,70 @@ public final class Prefs {
     public static final String LIMIT_AUTO = SHOW_AUTO, LIMIT_SHOW = SHOW_ON, LIMIT_HIDE = SHOW_OFF;
     public static final String TOP_PROJECTION = QUICK_PROJ, TOP_APP = QUICK_APP, TOP_NONE = QUICK_NONE;
 
-    /** Ordine in alto nel riquadro destro: false = sorgenti poi Mappa/Media (attuale, predefinito), true = scambiato. */
-    public boolean topSwapped() {
-        return sp.getBoolean("ordineAltoScambiato", false);
+    /**
+     * 0.3.3 (SWI68 1.0.4): pulsante accanto a Mappa/Media: nessuno o un'app. CarPlay/Android Auto stanno nella barra in
+     * basso; la scelta "un'app" del vecchio pulsante in alto a destra (0.3.1–0.3.2) resta valida.
+     */
+    public String topButton() {
+        return quickButton();
     }
 
-    public void setTopSwapped(boolean b) {
-        sp.edit().putBoolean("ordineAltoScambiato", b).apply();
+    public void setTopButton(String v) {
+        setQuickButton(v);
     }
+
+    /**
+     * 1.0.4 (issue #28): sorgenti audio da mostrare. Si salvano quelle NASCOSTE (così le sorgenti nuove compaiono da
+     * sole); predefinito: nessuna nascosta. CarPlay e Android Auto non si nascondono.
+     */
+    public boolean sourceShown(int src) {
+        // 0.4.4 (SWI69): la seconda porta USB segue la scelta di "USB"
+        if (src == com.mg4.launcher.svc.MediaClient.SRC_USB2) src = com.mg4.launcher.svc.MediaClient.SRC_USB;
+        return !("," + sp.getString("sorgentiNascoste", "") + ",").contains("," + src + ",");
+    }
+
+    public void setSourceShown(int src, boolean shown) {
+        java.util.LinkedHashSet<String> set = new java.util.LinkedHashSet<>();
+        for (String x : sp.getString("sorgentiNascoste", "").split(",")) if (!x.trim().isEmpty()) set.add(x.trim());
+        if (shown) set.remove(String.valueOf(src));
+        else set.add(String.valueOf(src));
+        sp.edit().putString("sorgentiNascoste", android.text.TextUtils.join(",", set)).apply();
+    }
+
+    /** 1.0.4 (punto F): animazione di ricarica (predefinito: attiva). */
+    public boolean chargeAnim() {
+        return sp.getBoolean("animazioneRicarica", true);
+    }
+
+    public void setChargeAnim(boolean on) {
+        sp.edit().putBoolean("animazioneRicarica", on).apply();
+    }
+
+    /** Ordine in alto nel riquadro destro: false = sorgenti poi Mappa/Media (attuale, predefinito), true = scambiato. */
 
     /** Riquadro in basso accanto al clima: "media" (come prima, predefinito), "telefono" (preferiti), "app" (scorciatoie). */
+    // ---- 0.3.3 (issue SWI132 #4): riquadro auto mostrato o nascosto, con un widget al suo posto -------------
+    public static final String WIDGET_CLOCK = "orologio", WIDGET_MAP = "mappa", WIDGET_MEDIA = "media", WIDGET_PHONE = "telefono";
+
+    /** Riquadro auto (autonomia, auto disegnata, gomme, ricarica): mostrato (predefinito) o nascosto. */
+    public boolean carPanelShown() {
+        return sp.getBoolean("riquadroAuto", true);
+    }
+
+    public void setCarPanelShown(boolean b) {
+        sp.edit().putBoolean("riquadroAuto", b).apply();
+    }
+
+    /** Widget al posto del riquadro auto nascosto: orologio e data (predefinito), mappa, media, preferiti del telefono. */
+    public String carWidget() {
+        String v = sp.getString("riquadroAutoWidget", WIDGET_CLOCK);
+        return WIDGET_MAP.equals(v) || WIDGET_MEDIA.equals(v) || WIDGET_PHONE.equals(v) ? v : WIDGET_CLOCK;
+    }
+
+    public void setCarWidget(String v) {
+        sp.edit().putString("riquadroAutoWidget", v).apply();
+    }
+
     public static final String TILE_MEDIA = "media", TILE_PHONE = "telefono", TILE_APPS = "app";
     public static final int TILE_MAX = 6;
 
