@@ -550,4 +550,7 @@
     <string name="news_v033_4" formatted="false">Car panel your way: hide it and put a clock, map, media or phone favourites in its place</string>
     <string name="news_v033_5" formatted="false">MG4 Store included; the day/night theme applies to the whole system; settings stay where they were</string>
     <string name="news_v033_6" formatted="false">Steering wheel buttons with USB 2 and radio at start-up more reliable; apps you installed can be removed with a long press</string>
+    <string name="chk_ready" formatted="false">READY read</string>
+    <string name="news_v034_1" formatted="false">Charging animation: it also starts with the screen on and the car parked in P; it stops only in READY, while moving or out of P</string>
+    <string name="news_v034_2" formatted="false">Charging cable detected more reliably; new “READY read” test in the Feature check; texts translated in all languages</string>
 </resources>

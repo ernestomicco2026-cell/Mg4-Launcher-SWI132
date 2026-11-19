@@ -550,4 +550,7 @@
     <string name="news_v033_4" formatted="false">Panneau voiture au choix : masquez-le et mettez à sa place horloge, carte, médias ou favoris du téléphone</string>
     <string name="news_v033_5" formatted="false">MG4 Store inclus ; le thème jour/nuit s\'applique à tout le système ; les réglages restent où ils étaient</string>
     <string name="news_v033_6" formatted="false">Boutons du volant avec l\'USB 2 et radio au démarrage plus fiables ; les applis que vous avez installées se désinstallent par un appui long</string>
+    <string name="chk_ready" formatted="false">READY lu</string>
+    <string name="news_v034_1" formatted="false">Animation de recharge : elle démarre aussi écran allumé et voiture à l\'arrêt en P ; elle s\'arrête seulement en READY, en roulant ou hors de P</string>
+    <string name="news_v034_2" formatted="false">Câble de recharge mieux détecté ; nouveau test « READY lu » dans le Contrôle des fonctions ; textes traduits dans toutes les langues</string>
 </resources>

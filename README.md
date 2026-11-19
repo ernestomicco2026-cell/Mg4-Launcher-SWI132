@@ -17,7 +17,7 @@
 
 # MG4 Launcher — SWI132 (MG4 MY24)
 
-<p align="center"><img src="screenshots/MG4Launcher-SWI132-0.3.3-ricarica.gif" alt="Home di MG4 Launcher SWI132 con l'animazione di ricarica (simulazione) · MG4 Launcher SWI132 home with the charging animation (mock-up)" width="100%"></p>
+<p align="center"><img src="screenshots/MG4Launcher-SWI132-0.3.4-ricarica.gif" alt="Home di MG4 Launcher SWI132 con l'animazione di ricarica (simulazione) · MG4 Launcher SWI132 home with the charging animation (mock-up)" width="100%"></p>
 
 <p align="center">
 <b>Launcher in stile Tesla per l'infotainment MG4 SWI132</b><br>
@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-<a href="releases/MG4Launcher-SWI132-0.3.3.apk"><img alt="Scarica / Download 0.3.3" src="https://img.shields.io/badge/Scarica%20%2F%20Download-0.3.3-2ea44f?style=for-the-badge&logo=android&logoColor=white"></a>
+<a href="releases/MG4Launcher-SWI132-0.3.4.apk"><img alt="Scarica / Download 0.3.4" src="https://img.shields.io/badge/Scarica%20%2F%20Download-0.3.4-2ea44f?style=for-the-badge&logo=android&logoColor=white"></a>
 <a href="https://paypal.me/ErnestoMicco?locale.x=it_IT&country.x=IT"><img alt="Sostieni il progetto con PayPal · Support the project with PayPal" src="https://img.shields.io/badge/Sostieni%20%2F%20Support-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white"></a> <img alt="sperimentale / experimental" src="https://img.shields.io/badge/sperimentale%20%2F%20experimental-orange?style=for-the-badge">
 </p>
 
@@ -203,7 +203,7 @@ Ci sono due modi per installarlo: da chiavetta USB, se riesci ad aprire un file 
 
 Serve poter aprire un file manager sull'infotainment.
 
-1. Copia `MG4Launcher-SWI132-0.3.3.apk` su una chiavetta USB formattata **FAT32** o **exFAT**.
+1. Copia `MG4Launcher-SWI132-0.3.4.apk` su una chiavetta USB formattata **FAT32** o **exFAT**.
 2. Inserisci la chiavetta nell'auto, apri il file manager e tocca l'APK.
 3. Se Android avvisa che non può installare app da questa fonte: tocca **Impostazioni**, attiva
    **Consenti da questa fonte** per il file manager e torna indietro.
@@ -220,7 +220,7 @@ Il firmware MG può bloccare l'installazione normale delle app: l'opzione `-f` l
 
 1. Installa:
    ```bash
-   adb install -r -f MG4Launcher-SWI132-0.3.3.apk
+   adb install -r -f MG4Launcher-SWI132-0.3.4.apk
    ```
 2. Rendilo la home predefinita:
    ```bash
@@ -303,6 +303,16 @@ Anche solo **2 €** sono un aiuto prezioso per continuare a sviluppare e provar
 [![Offrimi un caffè con PayPal](https://img.shields.io/badge/Offrimi%20un%20caff%C3%A8-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/ErnestoMicco?locale.x=it_IT&country.x=IT)
 
 ### Versioni
+
+#### 0.3.4
+- **Animazione di ricarica**: ora parte anche con lo schermo acceso e l'auto ferma in P. Prima la 0.3.3 scambiava il
+  quadro acceso per READY e la teneva sempre ferma. READY ora si legge dal suo segnale vero (SENSOR_EPTRDY):
+  l'animazione si ferma solo in READY, in movimento o con una marcia diversa da P, e parte solo con il riquadro auto
+  visibile.
+- **Cavo inserito**: se la presa dice "staccato" ma lo stato di ricarica dice "cavo attaccato", vale il cavo
+  attaccato (il disaccordo finisce nel log).
+- Controllo funzioni: nuova prova "READY letto". Testi controllati in tutte le 8 lingue (tradotti anche quelli
+  rimasti in inglese).
 
 #### 0.3.3
 - **Disinstallazione sicura**: "Disinstalla" riaccende la home originale MG, controlla che sia davvero attiva e solo
@@ -634,7 +644,7 @@ There are two ways to install it: from a USB stick, if you can open a file manag
 
 You need to be able to open a file manager on the infotainment.
 
-1. Copy `MG4Launcher-SWI132-0.3.3.apk` to a USB stick formatted as **FAT32** or **exFAT**.
+1. Copy `MG4Launcher-SWI132-0.3.4.apk` to a USB stick formatted as **FAT32** or **exFAT**.
 2. Plug it into the car, open the file manager and tap the APK.
 3. If Android says it cannot install apps from this source: tap **Settings**, enable
    **Allow from this source** for the file manager and go back.
@@ -650,7 +660,7 @@ The MG firmware may block normal app installs; the `-f` option allows it.
 
 1. Install it:
    ```bash
-   adb install -r -f MG4Launcher-SWI132-0.3.3.apk
+   adb install -r -f MG4Launcher-SWI132-0.3.4.apk
    ```
 2. Make it the default home:
    ```bash
@@ -731,6 +741,15 @@ Even just **€2** is a great help to keep developing and testing new versions i
 [![Buy me a coffee with PayPal](https://img.shields.io/badge/Buy%20me%20a%20coffee-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/ErnestoMicco?locale.x=it_IT&country.x=IT)
 
 ### Changelog
+
+#### 0.3.4
+- **Charging animation**: it now also starts with the screen on and the car parked in P. Version 0.3.3 mistook
+  ignition-on for READY and kept it always stopped. READY is now read from its real signal (SENSOR_EPTRDY): the
+  animation stops only in READY, while moving or in a gear other than P, and starts only with the car panel visible.
+- **Cable plugged in**: if the socket says "unplugged" but the charging state says "cable attached", the cable counts
+  as attached (the disagreement goes to the log).
+- Feature check: new "READY read" test. Texts checked in all 8 languages (the ones left in English are now
+  translated too).
 
 #### 0.3.3
 - **Safe uninstall**: "Uninstall" turns the original MG home back on, checks that it is really active and only then

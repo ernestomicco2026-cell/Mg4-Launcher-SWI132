@@ -550,4 +550,7 @@
     <string name="news_v033_4" formatted="false">Fahrzeugfeld nach Wahl: ausblenden und stattdessen Uhr, Karte, Medien oder Telefon-Favoriten zeigen</string>
     <string name="news_v033_5" formatted="false">MG4 Store enthalten; das Tag/Nacht-Design gilt für das ganze System; die Einstellungen bleiben, wo sie waren</string>
     <string name="news_v033_6" formatted="false">Lenkradtasten mit USB 2 und Radio beim Start zuverlässiger; selbst installierte Apps per langem Drücken deinstallieren</string>
+    <string name="chk_ready" formatted="false">READY gelesen</string>
+    <string name="news_v034_1" formatted="false">Lade-Animation: startet auch bei eingeschaltetem Bildschirm und Auto in P; stoppt nur bei READY, während der Fahrt oder außerhalb von P</string>
+    <string name="news_v034_2" formatted="false">Ladekabel wird zuverlässiger erkannt; neuer Test „READY gelesen“ in der Funktionsprüfung; Texte in allen Sprachen übersetzt</string>
 </resources>

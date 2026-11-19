@@ -550,4 +550,7 @@
     <string name="news_v033_4" formatted="false">Recuadro del coche a tu gusto: ocúltalo y pon en su lugar reloj, mapa, multimedia o favoritos del teléfono</string>
     <string name="news_v033_5" formatted="false">MG4 Store incluido; el tema día/noche vale para todo el sistema; los ajustes se quedan donde estaban</string>
     <string name="news_v033_6" formatted="false">Botones del volante con la USB 2 y radio al arrancar más fiables; las apps que instalaste se desinstalan con una pulsación larga</string>
+    <string name="chk_ready" formatted="false">READY leído</string>
+    <string name="news_v034_1" formatted="false">Animación de carga: también arranca con la pantalla encendida y el coche parado en P; se detiene solo en READY, en movimiento o fuera de P</string>
+    <string name="news_v034_2" formatted="false">Cable de carga detectado mejor; nueva prueba «READY leído» en la Comprobación de funciones; textos traducidos a todos los idiomas</string>
 </resources>

@@ -550,4 +550,7 @@
     <string name="news_v033_4" formatted="false">Painel do carro à escolha: oculta-o e põe no seu lugar relógio, mapa, multimédia ou favoritos do telefone</string>
     <string name="news_v033_5" formatted="false">MG4 Store incluído; o tema dia/noite vale para todo o sistema; as definições ficam onde estavam</string>
     <string name="news_v033_6" formatted="false">Botões do volante com a USB 2 e rádio ao ligar mais fiáveis; as apps que instalaste desinstalam-se com um toque longo</string>
+    <string name="chk_ready" formatted="false">READY lido</string>
+    <string name="news_v034_1" formatted="false">Animação de carregamento: arranca também com o ecrã ligado e o carro parado em P; para só em READY, em movimento ou fora de P</string>
+    <string name="news_v034_2" formatted="false">Cabo de carregamento detetado melhor; novo teste «READY lido» na Verificação de funções; textos traduzidos em todas as línguas</string>
 </resources>

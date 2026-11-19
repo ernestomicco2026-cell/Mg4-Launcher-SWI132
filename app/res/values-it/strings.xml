@@ -550,4 +550,7 @@
     <string name="news_v033_4" formatted="false">Riquadro auto a scelta: puoi nasconderlo e mettere al suo posto orologio, mappa, media o preferiti del telefono</string>
     <string name="news_v033_5" formatted="false">MG4 Store incluso; il tema giorno/notte vale per tutto il sistema; le impostazioni restano dov\'erano</string>
     <string name="news_v033_6" formatted="false">Tasti al volante con la USB 2 e radio all\'accensione più affidabili; app installate da te si disinstallano con una pressione lunga</string>
+    <string name="chk_ready" formatted="false">READY letto</string>
+    <string name="news_v034_1" formatted="false">Animazione di ricarica: parte anche con lo schermo acceso e l\'auto ferma in P; si ferma solo in READY, in movimento o fuori da P</string>
+    <string name="news_v034_2" formatted="false">Cavo di ricarica riconosciuto meglio; nuova prova «READY letto» nel Controllo funzioni; testi tradotti in tutte le lingue</string>
 </resources>

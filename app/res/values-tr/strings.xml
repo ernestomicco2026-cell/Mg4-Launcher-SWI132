@@ -550,4 +550,7 @@
     <string name="news_v033_4" formatted="false">Araç paneli isteğe bağlı: gizleyip yerine saat, harita, medya veya telefon favorilerini koyabilirsin</string>
     <string name="news_v033_5" formatted="false">MG4 Store dahil; gündüz/gece teması tüm sistem için geçerli; ayarlar olduğu yerde kalır</string>
     <string name="news_v033_6" formatted="false">USB 2 ile direksiyon tuşları ve açılışta radyo daha güvenilir; yüklediğin uygulamalar uzun basarak kaldırılır</string>
+    <string name="chk_ready" formatted="false">READY okundu</string>
+    <string name="news_v034_1" formatted="false">Şarj animasyonu: ekran açıkken ve araç P\'de dururken de başlar; yalnızca READY\'de, hareket halinde veya P dışında durur</string>
+    <string name="news_v034_2" formatted="false">Şarj kablosu daha iyi algılanıyor; İşlev kontrolünde yeni “READY okundu” testi; metinler tüm dillere çevrildi</string>
 </resources>

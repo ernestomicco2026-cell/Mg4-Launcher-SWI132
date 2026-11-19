@@ -609,4 +609,16 @@ PL = {
     "news_v033_4": "Panel samochodu do wyboru: ukryj go i wstaw zegar, mapę, multimedia lub ulubione telefonu",
     "news_v033_5": "MG4 Store w zestawie; motyw dzień/noc dotyczy całego systemu; ustawienia zostają na miejscu",
     "news_v033_6": "Przyciski na kierownicy z USB 2 i radio przy uruchomieniu działają pewniej; własne aplikacje usuniesz długim przytrzymaniem",
+    # --- 0.3.4 ---
+    "chk_ready": "READY odczytany",
+    "news_v034_1": "Animacja ładowania: startuje też przy włączonym ekranie i aucie stojącym na P; zatrzymuje się tylko w READY, w ruchu lub poza P",
+    "news_v034_2": "Kabel ładowania wykrywany lepiej; nowy test „READY odczytany” w Kontroli funkcji; teksty przetłumaczone na wszystkie języki",
+    "set_heat": "Podgrzewane fotele i kierownica",
+    "set_heat_sub": "Automatycznie: według wyposażenia auta. Jeśli je masz, a się nie pojawiają, wybierz Pokaż",
+    "set_retro": "Po cofaniu wróć do poprzedniej aplikacji",
+    "set_retro_sub": "CarPlay, Android Auto (także przez box), nawigacja lub aplikacja, która była otwarta",
+    "set_quick": "Przycisk w prawym górnym rogu",
+    "set_quick_sub": "Bez przycisku źródła multimediów zawsze pokazują swoją nazwę",
+    "quick_app": "Aplikacja…",
+    "quick_pick": "Wybierz aplikację przycisku",
 }

@@ -1680,7 +1680,10 @@ public final class HomeView extends LinearLayout {
         if (chargeAnim == null) return;
         String color = Prefs.CAR_COLORS[prefs.carColorIndex()];
         boolean plugged = VehicleClient.cablePlugged(s), done = VehicleClient.chargeDone(s);
-        boolean ready = s.ignition == 2, moving = !Float.isNaN(s.speedKmh) && Math.abs(s.speedKmh) >= 1f;
+        // 0.4.5: ferma solo con READY confermato (SENSOR_EPTRDY = 1), in movimento o con una marcia diversa da P;
+        // READY sconosciuto non blocca, e l'accensione (quadro acceso) non conta come READY
+        boolean ready = s.ready == 1, moving = !Float.isNaN(s.speedKmh) && Math.abs(s.speedKmh) >= 1f;
+        boolean notPark = s.gear >= 0 && s.gear != 1;
         // il controllo dei file si rifà solo quando il pacchetto o il colore cambiano (niente disco a ogni lettura)
         if (animGen != com.mg4.launcher.svc.ChargePack.generation || !color.equals(animColor)) {
             animGen = com.mg4.launcher.svc.ChargePack.generation;
@@ -1688,11 +1691,12 @@ public final class HomeView extends LinearLayout {
             animHave = com.mg4.launcher.svc.ChargePack.complete(getContext(), color);
         }
         boolean have = animHave;
-        String why = !prefs.chargeAnim() ? "spenta nelle impostazioni" : ready ? "in READY: ferma" : moving ? "in movimento: ferma"
-                : !have ? "pacchetto non disponibile" : "";
+        // 0.3.4: l'animazione parte solo con il riquadro auto visibile (con il widget al suo posto non c'è l'auto)
+        String why = !prefs.chargeAnim() ? "spenta nelle impostazioni" : !prefs.carPanelShown() ? "riquadro auto nascosto" : ready ? "in READY: ferma" : moving ? "in movimento: ferma"
+                : notPark ? "marcia non in P: ferma" : !have ? "pacchetto non disponibile" : "";
         // al massimo una volta al minuto (ensure controlla poi il limite di 12 ore tra due download)
         long nowMs = SystemClock.uptimeMillis();
-        if (!have && plugged && prefs.chargeAnim() && nowMs - animEnsureAt > 60_000) {
+        if (!have && plugged && prefs.chargeAnim() && prefs.carPanelShown() && nowMs - animEnsureAt > 60_000) {
             animEnsureAt = nowMs;
             com.mg4.launcher.svc.ChargePack.ensure(getContext(), color, false);
         }
@@ -1701,7 +1705,8 @@ public final class HomeView extends LinearLayout {
         String txt = (prefs.chargeAnim() ? "attiva" : "spenta") + " · pacchetto " + color + " "
                 + (have ? "presente" : com.mg4.launcher.svc.ChargePack.busy() ? "in download" : "assente") + " · "
                 + ChargeAnimView.phaseTxt + " · cavo " + (plugged ? "inserito" : "non inserito") + (done ? " · carica finita" : "")
-                + " · stato ricarica " + s.chargingStatus + " · presa " + s.plugProp + " · accensione " + s.ignition;
+                + " · stato ricarica " + s.chargingStatus + " · presa " + s.plugProp + " · ready " + s.ready + " (" + s.readySource + ")"
+                + " · marcia " + VehicleClient.gearName(s.gear);
         if (!txt.equals(animLog)) {
             animLog = txt;
             com.mg4.launcher.svc.Diag.put("ricarica.animazione", txt);
