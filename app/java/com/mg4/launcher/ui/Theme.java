@@ -46,7 +46,7 @@ public final class Theme {
             choice = "automatico";
         }
         if (lastDay == null || lastDay != day) {
-            lastChange = new java.text.SimpleDateFormat("dd/MM HH:mm:ss", java.util.Locale.ITALY).format(new java.util.Date());
+            lastChange = new java.text.SimpleDateFormat("dd/MM HH:mm:ss", java.util.Locale.US).format(new java.util.Date());
             lastDay = day;
         }
         report(c, choice, day);

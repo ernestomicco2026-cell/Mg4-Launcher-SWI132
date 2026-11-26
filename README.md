@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-<a href="releases/MG4Launcher-SWI132-0.3.5.apk"><img alt="Scarica / Download 0.3.5" src="https://img.shields.io/badge/Scarica%20%2F%20Download-0.3.5-2ea44f?style=for-the-badge&logo=android&logoColor=white"></a>
+<a href="releases/MG4Launcher-SWI132-0.3.6.apk"><img alt="Scarica / Download 0.3.6" src="https://img.shields.io/badge/Scarica%20%2F%20Download-0.3.6-2ea44f?style=for-the-badge&logo=android&logoColor=white"></a>
 <a href="https://paypal.me/ErnestoMicco?locale.x=it_IT&country.x=IT"><img alt="Sostieni il progetto con PayPal · Support the project with PayPal" src="https://img.shields.io/badge/Sostieni%20%2F%20Support-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white"></a> <img alt="sperimentale / experimental" src="https://img.shields.io/badge/sperimentale%20%2F%20experimental-orange?style=for-the-badge">
 </p>
 
@@ -203,7 +203,7 @@ Ci sono due modi per installarlo: da chiavetta USB, se riesci ad aprire un file 
 
 Serve poter aprire un file manager sull'infotainment.
 
-1. Copia `MG4Launcher-SWI132-0.3.5.apk` su una chiavetta USB formattata **FAT32** o **exFAT**.
+1. Copia `MG4Launcher-SWI132-0.3.6.apk` su una chiavetta USB formattata **FAT32** o **exFAT**.
 2. Inserisci la chiavetta nell'auto, apri il file manager e tocca l'APK.
 3. Se Android avvisa che non può installare app da questa fonte: tocca **Impostazioni**, attiva
    **Consenti da questa fonte** per il file manager e torna indietro.
@@ -220,7 +220,7 @@ Il firmware MG può bloccare l'installazione normale delle app: l'opzione `-f` l
 
 1. Installa:
    ```bash
-   adb install -r -f MG4Launcher-SWI132-0.3.5.apk
+   adb install -r -f MG4Launcher-SWI132-0.3.6.apk
    ```
 2. Rendilo la home predefinita:
    ```bash
@@ -303,6 +303,9 @@ Anche solo **2 €** sono un aiuto prezioso per continuare a sviluppare e provar
 [![Offrimi un caffè con PayPal](https://img.shields.io/badge/Offrimi%20un%20caff%C3%A8-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/ErnestoMicco?locale.x=it_IT&country.x=IT)
 
 ### Versioni
+
+#### 0.3.6
+- Invio dei log più sicuro (tramite server ponte); Diagnostica completa in Impostazioni → Sistema, anche automatica dopo ogni aggiornamento; Controllo funzioni che aspetta rete e servizi dopo l'accensione; barre di sistema ferme durante le chiamate (grazie a lukeet332); copertina con CarPlay cercata anche nelle altre sessioni; consumo istantaneo accanto alla batteria (a scelta).
 
 #### 0.3.5
 - Android Auto, chiavetta USB e radio regolari all'accensione (il riavvio del dongle interviene solo con un dongle vero); Spegni la vettura dalle impostazioni (solo in P, ricontrollata prima del comando); riquadro auto allineato alla SWI68; navigatore in finestra nel pannello mappe (sperimentale, se il navigatore lo permette); animazione di ricarica: pulsante Simula ricarica, preparazione molto più veloce e log inviato da solo alla prima ricarica; Android Auto e CarPlay tra le sorgenti quando il telefono è collegato, con titolo e artista (e copertina, se trovata); testi del brano e della stazione più grandi; Scorri in su per tornare (facoltativo); tendina dall'alto a schermo intero (facoltativa); scegli i 5 pulsanti della barra di ricarica; tema scuro quando i fari sono accesi (a scelta); tema scelto a mano che non torna più indietro; tasti avanti/indietro al volante; direzione dell'aria, sbrinamento e lunotto nel menu Clima (grazie a sommistica); niente più falsi errori delle stazioni e dei fari.
@@ -647,7 +650,7 @@ There are two ways to install it: from a USB stick, if you can open a file manag
 
 You need to be able to open a file manager on the infotainment.
 
-1. Copy `MG4Launcher-SWI132-0.3.5.apk` to a USB stick formatted as **FAT32** or **exFAT**.
+1. Copy `MG4Launcher-SWI132-0.3.6.apk` to a USB stick formatted as **FAT32** or **exFAT**.
 2. Plug it into the car, open the file manager and tap the APK.
 3. If Android says it cannot install apps from this source: tap **Settings**, enable
    **Allow from this source** for the file manager and go back.
@@ -663,7 +666,7 @@ The MG firmware may block normal app installs; the `-f` option allows it.
 
 1. Install it:
    ```bash
-   adb install -r -f MG4Launcher-SWI132-0.3.5.apk
+   adb install -r -f MG4Launcher-SWI132-0.3.6.apk
    ```
 2. Make it the default home:
    ```bash
@@ -744,6 +747,9 @@ Even just **€2** is a great help to keep developing and testing new versions i
 [![Buy me a coffee with PayPal](https://img.shields.io/badge/Buy%20me%20a%20coffee-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/ErnestoMicco?locale.x=it_IT&country.x=IT)
 
 ### Changelog
+
+#### 0.3.6
+- Safer log upload (through a relay server); Full diagnostics in Settings → System, also automatic after each update; the function check waits for network and services after start-up; system bars stay still during calls (thanks to lukeet332); CarPlay cover also looked for in the other sessions; instant consumption next to the battery (optional).
 
 #### 0.3.5
 - Android Auto, USB stick and radio work normally at start-up (the dongle restart only acts with a real dongle); Turn off the car from the settings (only in P, checked again before the command); car panel aligned with the SWI68; navigation in a window inside the map panel (experimental, if the navigation app allows it); charging animation: Simulate charging button, much faster preparation and a log sent automatically on the first charge; Android Auto and CarPlay among the sources while the phone is connected, with title and artist (and cover, if found); bigger song and station text; Swipe up to go back (optional); swipe down from the top in full screen (optional); choose the 5 buttons of the charging bar; dark theme when the headlights are on (optional); a manually chosen theme no longer switches back; steering-wheel next/previous buttons; air direction, front demist and rear-window heating in the Climate menu (thanks to sommistica); no more false station and headlight errors.

@@ -139,6 +139,8 @@ public final class VehicleClient {
         public int chargingStatus = -1;   // codici SAIC (uguali alla SWI68), vedi chargeText
         public int predictMinutes = -1;
         public float chargeKw = 0;
+        /** 1.0.7: tensione della batteria di trazione (getPowerBatteryVol), -1 = non letta. */
+        public float batteryVolts = -1;
         public int chargeLimit = -1;      // % (convertito dal codice SAIC)
         public int chargeLimitCode = -1;  // 1..7
         public int currentLimit = -1;     // 1..4 (6 A, 8 A, 16 A, Max), 0 = non disponibile
@@ -245,13 +247,130 @@ public final class VehicleClient {
     /** Sospende le letture (launcher non visibile) senza scollegarsi dai servizi. */
     public void pause() {
         running = false;
-        if (bg != null) bg.removeCallbacks(loop);
+        if (bg != null) {
+            bg.removeCallbacks(loop);
+            bg.removeCallbacks(powerLoop);
+        }
+    }
+
+    // ---- 1.0.7: consumo istantaneo (potenza della batteria) ------------------------------------------------------
+    /** kW smussati: positivo = consumo, negativo = recupero; NaN = non leggibile. Sul thread principale. */
+    public interface PowerListener {
+        void onPower(float kw);
+    }
+
+    private volatile PowerListener powerListener;
+    private float powerSmooth = Float.NaN;
+    private static volatile boolean powerLogged;
+    private static final long POWER_MS = 500;   // al massimo 2 volte al secondo
+
+    /**
+     * Potenza istantanea = corrente × tensione della batteria di trazione (IVehicleChargingService 7
+     * getActualChargingCurrent, 64 getPowerBatteryVol): nei log, a ricarica ferma, la corrente è positiva in consumo e
+     * negativa in recupero. Solo letture. null = ferma. Solo mentre il launcher è visibile (pause() la ferma).
+     */
+    public void setPowerListener(PowerListener l) {
+        powerListener = l;
+        restartPower();
+    }
+
+    /**
+     * Riparte da zero il giro della potenza. Tutto sul thread di sfondo: lì il giro non può essere a metà, quindi non
+     * restano mai due giri insieme (che leggerebbero 4 volte al secondo).
+     */
+    private void restartPower() {
+        Handler h = bg;
+        if (h == null) return;
+        h.post(() -> {
+            h.removeCallbacks(powerLoop);
+            powerSmooth = Float.NaN;
+            if (powerListener != null) h.post(powerLoop);
+        });
+    }
+
+    /** Toglie l'ascoltatore solo se è ancora quello dato (una home ricostruita ha già messo il suo). */
+    public void clearPowerListener(PowerListener l) {
+        if (powerListener == l) setPowerListener(null);
+    }
+
+    private final Runnable powerLoop = new Runnable() {
+        @Override
+        public void run() {
+            PowerListener l = powerListener;
+            if (l == null || !running) return;
+            float kw = Float.NaN;
+            try {
+                CarProps p = props;
+                if (p != null && p.ready()) {
+                    float a = p.getFloat(BMS_PACK_CRNT), v = p.getFloat(BMS_PACK_VOL);
+                    // tensione fuori scala o corrente assurda = dato non valido
+                    if (!Float.isNaN(a) && !Float.isNaN(v) && v > 100 && v < 1000 && Math.abs(a) < 1000) kw = currentSign() * a * v / 1000f;
+                    if (!powerLogged) {
+                        powerLogged = true;
+                        Diag.put("consumo.fonte", "CarService BMS_PACK_CRNT 0x2160f407 × BMS_PACK_VOL 0x2160f406 (come l'app Energia SWI132) · "
+                                + (Float.isNaN(kw) ? "non leggibile (" + a + " A / " + v + " V)"
+                                : String.format(java.util.Locale.US, "primo valore %.1f A × %.0f V = %.1f kW · segno %s", a, v, kw, signNote())));
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+            // smussatura esponenziale: la barra non balla a ogni lettura
+            if (Float.isNaN(kw)) powerSmooth = Float.NaN;
+            else powerSmooth = Float.isNaN(powerSmooth) ? kw : powerSmooth + 0.3f * (kw - powerSmooth);
+            final float out = powerSmooth;
+            main.post(() -> {
+                PowerListener cur = powerListener;
+                if (cur != null) cur.onPower(out);
+            });
+            if (bg != null) bg.postDelayed(this, POWER_MS);
+        }
+    };
+
+    /**
+     * 0.3.6: BMS_PACK_CRNT / BMS_PACK_VOL del CarService (proprietà SAIC lette dall'app Energia della SWI132, firmware R43).
+     * Il segno della corrente sulla SWI132 non è verificato in auto: si impara in ricarica (la corrente che entra nella
+     * batteria è "recupero"): se in ricarica la corrente è positiva il segno si inverte. Finché non si è vista una
+     * ricarica vale come la SWI68 (positiva = consumo). Salvato nelle preferenze (consumoSegno).
+     */
+    static final int BMS_PACK_CRNT = 0x2160f407, BMS_PACK_VOL = 0x2160f406;
+    private int signCache;
+
+    private int currentSign() {
+        if (signCache == 0) signCache = ctx.getSharedPreferences("mg4launcher", Context.MODE_PRIVATE).getInt("consumoSegno", 1);
+        return signCache;
+    }
+
+    private String signNote() {
+        return ctx.getSharedPreferences("mg4launcher", Context.MODE_PRIVATE).contains("consumoSegno")
+                ? (currentSign() > 0 ? "imparato in ricarica: positiva = consumo" : "imparato in ricarica: positiva = recupero")
+                : "non ancora visto in ricarica: positiva = consumo (da verificare)";
+    }
+
+    /** In ricarica vera (cavo inserito, corrente di almeno 3 A) si impara il segno; una riga di log quando cambia. */
+    private void learnSign(State s) {
+        CarProps p = props;
+        if (p == null || !p.ready() || !isCharging(s.chargingStatus)) return;
+        float a = p.getFloat(BMS_PACK_CRNT);
+        if (Float.isNaN(a) || Math.abs(a) < 3f) return;
+        int sign = a > 0 ? -1 : 1;   // entra nella batteria = recupero (negativo)
+        android.content.SharedPreferences sp = ctx.getSharedPreferences("mg4launcher", Context.MODE_PRIVATE);
+        if (sp.getInt("consumoSegno", 0) == sign) return;
+        sp.edit().putInt("consumoSegno", sign).apply();
+        signCache = sign;
+        Diag.put("consumo.segno", "imparato in ricarica: corrente " + String.format(java.util.Locale.US, "%.1f", a) + " A → "
+                + (sign > 0 ? "positiva = consumo" : "positiva = recupero"));
+    }
+
+    /** true se la potenza della batteria si legge (per mostrare l'opzione nelle impostazioni). */
+    public static boolean powerReadable(State s) {
+        return s != null && s.connected && s.batteryVolts > 100 && s.batteryVolts < 1000;
     }
 
     public void resume() {
         if (bg == null || running) return;
         running = true;
         bg.post(loop);
+        if (powerListener != null) restartPower();
     }
 
     private final Runnable loop = new Runnable() {
@@ -262,6 +381,15 @@ public final class VehicleClient {
             bg.postDelayed(this, 2000);
         }
     };
+
+    /** 0.3.6 (diagnostica completa): servizio del hub (BIND_CODE_CAR_*) per le sole letture; null se non raggiungibile. */
+    public IBinder subService(int code) {
+        try {
+            return sub(code);
+        } catch (Throwable e) {
+            return null;
+        }
+    }
 
     private IBinder sub(int code) throws RemoteException {
         synchronized (subs) {
@@ -531,8 +659,8 @@ public final class VehicleClient {
         int st = sw >= 1 && sw <= 3 && timesOk ? (sw == 2 ? 0 : 1) : -1;
         st = held(CarBms.RESV_SWITCH, st, now);
         schedCache = new int[]{st};
-        schedText[0] = timesOk ? String.format(java.util.Locale.ROOT, "%02d:%02d", sh, sm) : "";
-        schedText[1] = timesOk ? String.format(java.util.Locale.ROOT, "%02d:%02d", eh, em) : "";
+        schedText[0] = timesOk ? String.format(java.util.Locale.US, "%02d:%02d", sh, sm) : "";
+        schedText[1] = timesOk ? String.format(java.util.Locale.US, "%02d:%02d", eh, em) : "";
         s.scheduled = st;
         s.schedStart = schedText[0];
         s.schedEnd = schedText[1];
@@ -660,6 +788,15 @@ public final class VehicleClient {
         }
         s.plugProp = plugCache;
         s.speedKmh = speedKmh();
+        // 0.3.6: tensione della batteria di trazione (per l'opzione del consumo istantaneo) e segno della corrente
+        if (props != null && props.ready()) {
+            float bv = props.getFloat(BMS_PACK_VOL);
+            s.batteryVolts = Float.isNaN(bv) ? -1 : bv;
+            try {
+                learnSign(s);
+            } catch (Throwable ignored) {
+            }
+        }
         try {
             IBinder st = sub(BIND_STATE);
             if (st == null) {
@@ -1133,7 +1270,7 @@ public final class VehicleClient {
                 Diag.error("auto.spegnimento", e.toString());
             }
             Diag.put("auto.spegnimento", "richiesto · marcia " + gearName(gear == Integer.MIN_VALUE ? -1 : gear) + " · velocità "
-                    + (Float.isNaN(speed) ? "non letta" : String.format(java.util.Locale.ROOT, "%.1f", speed))
+                    + (Float.isNaN(speed) ? "non letta" : String.format(java.util.Locale.US, "%.1f", speed))
                     + " · metodo ICarComfortabletService.setPowerModeSwitch(2) · getPowerModeSwitch non presente su SWI132"
                     + " · accensione " + ign + " · ready " + rdy + " · esito " + res);
             if ("inviato".equals(res)) bg.postDelayed(() -> checkPowerOff(ign, rdy), 5000);
@@ -1570,7 +1707,7 @@ public final class VehicleClient {
         hold(CarBms.CHRG_LOCK, 2);
         bg.post(() -> {
             boolean sent = bms.setInt(CarBms.CHRG_LOCK, 2);
-            String ora = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.ROOT).format(new java.util.Date());
+            String ora = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date());
             Diag.put("ricarica.sbloccaPresa", (sent ? "inviato alle " : "NON inviato (gestore batteria non pronto) alle ") + ora);
             poll();
         });

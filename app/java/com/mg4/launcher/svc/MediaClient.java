@@ -397,6 +397,7 @@ public final class MediaClient {
                 long off = android.os.SystemClock.elapsedRealtime() - screenOffAt;
                 chosen = 0;
                 BootLog.powerOn("risveglio dello schermo dopo " + (off / 60_000) + " min");
+                DeepCheck.onPowerOn(ctx, "risveglio dello schermo");   // 0.3.6: diagnostica automatica (una volta per versione)
                 onPowerOn("risveglio dello schermo dopo " + (off / 60_000) + " min");
             }
         }
@@ -417,6 +418,7 @@ public final class MediaClient {
     public void stop() {
         running = false;
         started = false;
+        if (instanceNow == this) instanceNow = null;   // 0.3.6 (come SWI68 1.0.7): un'accensione dopo lo stop aspetta il prossimo client
         try {
             ctx.unregisterReceiver(screen);
         } catch (Exception ignored) {
@@ -726,8 +728,25 @@ public final class MediaClient {
         st.append(" · titolo ").append(s.title.isEmpty() ? "no" : "sì").append(" · artista ").append(s.subtitle.isEmpty() ? "no" : "sì");
         Bitmap found = null;
         String foundFrom = "";
-        Object[][] srcs = {{"RemoteUI", remoteC}, {a == null ? "AllGo" : a.getPackageName(), a}};
-        for (Object[] sc : srcs) {
+        // 0.3.6 (issue SWI68 #30, CarPlay senza copertina): oltre a RemoteUI e alla sessione AllGo scelta, tutte le
+        // sessioni attive delle app AllGo (CarPlay e Android Auto hanno sessioni diverse). Solo letture.
+        java.util.List<Object[]> srcList = new ArrayList<>();
+        srcList.add(new Object[]{"RemoteUI", remoteC});
+        srcList.add(new Object[]{a == null ? "AllGo" : a.getPackageName(), a});
+        try {
+            android.media.session.MediaSessionManager msm =
+                    (android.media.session.MediaSessionManager) ctx.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController mc : msm.getActiveSessions(null)) {
+                String p = mc.getPackageName();
+                if (!p.startsWith("com.allgo.")) continue;
+                boolean dup = (a != null && mc.getSessionToken().equals(a.getSessionToken()))
+                        || (remoteC != null && mc.getSessionToken().equals(remoteC.getSessionToken()));
+                if (!dup) srcList.add(new Object[]{p, mc});
+            }
+        } catch (Throwable ignored) {
+        }
+        StringBuilder keys = new StringBuilder();
+        for (Object[] sc : srcList) {
             String name = (String) sc[0];
             MediaController mc = (MediaController) sc[1];
             if (mc == null) {
@@ -741,6 +760,7 @@ public final class MediaClient {
             for (int i = 0; i < bk.length; i++) {
                 Bitmap bm = m == null ? null : m.getBitmap(bk[i]);
                 st.append(' ').append(bn[i]).append(bm == null ? " no" : " " + bm.getWidth() + "×" + bm.getHeight());
+                if (bm != null) keys.append(' ').append(name.replace("com.allgo.", "")).append(':').append(bn[i]).append(' ').append(bm.getWidth()).append('×').append(bm.getHeight());
                 if (bm != null && found == null) {
                     found = bm;
                     foundFrom = name + " " + bn[i];
@@ -756,11 +776,22 @@ public final class MediaClient {
                 }
                 Bitmap bm = loadUri(u);
                 String scheme = u.contains(":") ? u.substring(0, u.indexOf(':')) : "?";
+                keys.append(' ').append(name.replace("com.allgo.", "")).append(':').append(un[i]).append('(').append(scheme).append(bm == null ? ", non leggibile)" : ")");
                 st.append(' ').append(un[i]).append(" sì (").append(scheme).append(bm == null ? ", non leggibile)" : ", " + bm.getWidth() + "×" + bm.getHeight() + ")");
                 if (bm != null && found == null) {
                     found = bm;
                     foundFrom = name + " " + un[i];
                 }
+            }
+            // icona della descrizione dei metadati (alcune sessioni mettono lì la copertina)
+            android.media.MediaDescription md = m == null ? null : m.getDescription();
+            Bitmap dib = md == null ? null : md.getIconBitmap();
+            if (dib == null && md != null && md.getIconUri() != null) dib = loadUri(md.getIconUri().toString());
+            st.append(" descrizione ").append(dib == null ? "no" : dib.getWidth() + "×" + dib.getHeight());
+            if (dib != null) keys.append(' ').append(name.replace("com.allgo.", "")).append(":descrizione ").append(dib.getWidth()).append('×').append(dib.getHeight());
+            if (dib != null && found == null) {
+                found = dib;
+                foundFrom = name + " descrizione";
             }
             try {
                 java.util.List<android.media.session.MediaSession.QueueItem> q = mc.getQueue();
@@ -787,16 +818,35 @@ public final class MediaClient {
             lastProjStudy = txt;
             Diag.put("media.proiezione", txt);
         }
+        // 0.3.6 (punto 8): media.copertina: sorgente, chiavi arrivate (nomi e misure, mai titoli), esito; solo se cambia
+        String cov = (s.deviceType == DEV_AAUTO ? "Android Auto" : "CarPlay") + " · sessioni " + srcList.size() + " · chiavi"
+                + (keys.length() == 0 ? " nessuna" : keys) + " · esito " + (found == null ? "nessuna copertina (resta l'icona)" : "mostrata da " + foundFrom);
+        if (!cov.equals(lastCover)) {
+            lastCover = cov;
+            Diag.put("media.copertina", cov);
+        }
     }
 
     /** Immagine da un indirizzo content://, file:// o android.resource:// (la stessa si tiene in memoria). */
+    private String lastCover = "";
+
     private Bitmap loadUri(String u) {
         if (u.equals(coverUri)) return coverUriBmp;
         Bitmap bm = null;
-        if (!u.startsWith("http")) {
-            try (java.io.InputStream in = ctx.getContentResolver().openInputStream(android.net.Uri.parse(u))) {
-                android.graphics.BitmapFactory.Options o = new android.graphics.BitmapFactory.Options();
-                o.inSampleSize = 1;
+        // solo indirizzi locali (mai internet); immagine ridotta a circa 512 px per non pesare sulla RAM
+        if (u.startsWith("content://") || u.startsWith("file://") || u.startsWith("android.resource://")) {
+            android.net.Uri uri = android.net.Uri.parse(u);
+            android.graphics.BitmapFactory.Options o = new android.graphics.BitmapFactory.Options();
+            try (java.io.InputStream in = ctx.getContentResolver().openInputStream(uri)) {
+                o.inJustDecodeBounds = true;
+                android.graphics.BitmapFactory.decodeStream(in, null, o);
+            } catch (Throwable ignored) {
+            }
+            int sample = 1;
+            while (o.outWidth / (sample * 2) >= 512 && o.outHeight / (sample * 2) >= 512) sample *= 2;
+            o.inJustDecodeBounds = false;
+            o.inSampleSize = sample;
+            try (java.io.InputStream in = ctx.getContentResolver().openInputStream(uri)) {
                 bm = android.graphics.BitmapFactory.decodeStream(in, null, o);
             } catch (Throwable ignored) {
             }
@@ -1393,7 +1443,7 @@ public final class MediaClient {
     private String lastPowerOnWhy = "";
 
     private static String clock() {
-        return new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.ITALY).format(new java.util.Date());
+        return new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date());
     }
 
     /**
@@ -1622,6 +1672,17 @@ public final class MediaClient {
         if (usbPortAvailable("usb1AvailableStatus") || usb.isPlaying()) out.add("usb1");
         if (usbPortAvailable("usb2AvailableStatus") || usb2.isPlaying()) out.add("usb2");
         return out;
+    }
+
+    /** 0.3.6 (diagnostica): c'è una sessione media attiva di un'app AllGo (CarPlay / Android Auto)? */
+    public static boolean allgoSessionPresent(Context c) {
+        try {
+            android.media.session.MediaSessionManager msm =
+                    (android.media.session.MediaSessionManager) c.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController mc : msm.getActiveSessions(null)) if (mc.getPackageName().startsWith("com.allgo.")) return true;
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     public boolean radioLinked() {

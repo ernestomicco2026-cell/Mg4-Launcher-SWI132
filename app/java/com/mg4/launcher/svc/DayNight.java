@@ -196,7 +196,7 @@ public final class DayNight {
     }
 
     private static String stamp() {
-        return new SimpleDateFormat("dd/MM HH:mm:ss", Locale.ITALY).format(new Date());
+        return new SimpleDateFormat("dd/MM HH:mm:ss", Locale.US).format(new Date());
     }
 
     private static final class Eval {
@@ -233,7 +233,7 @@ public final class DayNight {
         stuckNow = sp.getBoolean(K_UI_STUCK, false);
         if (stuckNow) d.append(" · uiMode bloccato (").append(sp.getString(K_UI_STUCK_WHY, "bloccato")).append("): ignorato");
         long at = sp.getLong(K_UI_CHANGED_AT, 0);
-        d.append(" · ultimo cambio uiMode ").append(at == 0 ? "mai visto" : new SimpleDateFormat("dd/MM HH:mm", Locale.ITALY).format(new Date(at)))
+        d.append(" · ultimo cambio uiMode ").append(at == 0 ? "mai visto" : new SimpleDateFormat("dd/MM HH:mm", Locale.US).format(new Date(at)))
                 .append(" (").append((sp.getLong(K_UI_ON_MS, 0) + onPending) / 3_600_000L).append(" h di accensione da allora)");
         int minNow = minutesNow();
         boolean sunDay = sun.valid ? (minNow >= sun.rise && minNow < sun.set) : (minNow >= 7 * 60 && minNow < 18 * 60);
@@ -332,7 +332,7 @@ public final class DayNight {
         String choice = sp.getString("theme", "auto");
         boolean manual = "giorno".equals(choice) || "notte".equals(choice);
         android.content.ContentResolver cr = c.getContentResolver();
-        String at = new SimpleDateFormat("HH:mm:ss", Locale.ITALY).format(new Date());
+        String at = new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
         int modeBefore = skinMode(cr);
         String modeTxt = "";
         // screen_skin_mode: si cambia solo per una scelta manuale e si rimette com'era con "Automatico"
@@ -535,7 +535,7 @@ public final class DayNight {
     }
 
     private static String hm(int min) {
-        return String.format(Locale.ROOT, "%02d:%02d", min / 60, min % 60);
+        return String.format(Locale.US, "%02d:%02d", min / 60, min % 60);
     }
 
     private static int minutesNow() {

@@ -619,4 +619,25 @@
     <string name="news_v035_4" formatted="false">Android Auto e CarPlay tra le sorgenti con il telefono collegato; titoli del brano e della stazione più grandi</string>
     <string name="news_v035_5" formatted="false">Direzione dell\'aria, sbrinamento e lunotto nel menu Clima (grazie a sommistica); tasti avanti/indietro al volante</string>
     <string name="news_v035_6" formatted="false">Tema scuro con i fari accesi (a scelta), tema scelto a mano che non torna indietro; Scorri in su per tornare e tendina dall\'alto (facoltativi)</string>
+    <string name="beside_battery" formatted="false">Batteria</string>
+    <string name="beside_both" formatted="false">Entrambi</string>
+    <string name="beside_power" formatted="false">Consumo istantaneo</string>
+    <string name="check_waiting" formatted="false">In attesa</string>
+    <string name="deep_auto" formatted="false">Diagnostica automatica dopo ogni aggiornamento</string>
+    <string name="deep_auto_sub" formatted="false">Una volta per versione, ad auto ferma e con internet. Solo letture.</string>
+    <string name="deep_failed" formatted="false">Rapporto non salvato: riprova più tardi.</string>
+    <string name="deep_no_logs" formatted="false">Fatto, ma questa versione non può inviare log: salva il log su chiavetta.</string>
+    <string name="deep_queued" formatted="false">Fatto: senza rete adesso, il rapporto partirà da solo appena c\'è internet.</string>
+    <string name="deep_running">In corso: passo %1$d di %2$d…</string>
+    <string name="deep_sent" formatted="false">Fatto: rapporto inviato. Grazie!</string>
+    <string name="deep_start" formatted="false">Avvia</string>
+    <string name="deep_sub" formatted="false">Legge tutto quello che serve per correggere i problemi e preparare le prossime versioni, poi invia il log. Solo letture, nessun comando all\'auto. Dura circa un minuto.</string>
+    <string name="deep_title" formatted="false">Diagnostica completa</string>
+    <string name="power_kw">%1$s kW</string>
+    <string name="set_beside" formatted="false">Accanto alla batteria</string>
+    <string name="set_beside_sub" formatted="false">Consumo istantaneo in kW: la barra va a sinistra quando l\'auto recupera energia</string>
+    <string name="news_v036_1" formatted="false">Invio dei log più sicuro (tramite server ponte)</string>
+    <string name="news_v036_2" formatted="false">Diagnostica completa in Impostazioni → Sistema, anche automatica dopo ogni aggiornamento</string>
+    <string name="news_v036_3" formatted="false">Barre di sistema ferme durante le chiamate (grazie a lukeet332); Controllo funzioni che aspetta rete e servizi dopo l\'accensione</string>
+    <string name="news_v036_4" formatted="false">Consumo istantaneo accanto alla batteria (a scelta); copertina con CarPlay cercata anche in altre sessioni</string>
 </resources>

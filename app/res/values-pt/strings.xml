@@ -619,4 +619,25 @@
     <string name="news_v035_4" formatted="false">Android Auto e CarPlay entre as fontes com o telemóvel ligado; títulos da música e da estação maiores</string>
     <string name="news_v035_5" formatted="false">Direção do ar, desembaciamento e óculo traseiro no menu Clima (obrigado a sommistica); botões seguinte/anterior do volante</string>
     <string name="news_v035_6" formatted="false">Tema escuro com os faróis acesos (opcional), o tema escolhido à mão já não volta atrás; Desliza para cima para voltar e painel de cima (opcionais)</string>
+    <string name="beside_battery" formatted="false">Bateria</string>
+    <string name="beside_both" formatted="false">Ambos</string>
+    <string name="beside_power" formatted="false">Consumo instantâneo</string>
+    <string name="check_waiting" formatted="false">Em espera</string>
+    <string name="deep_auto" formatted="false">Diagnóstico automático após cada atualização</string>
+    <string name="deep_auto_sub" formatted="false">Uma vez por versão, com o carro parado e com internet. Só leitura.</string>
+    <string name="deep_failed" formatted="false">Relatório não guardado: tenta mais tarde.</string>
+    <string name="deep_no_logs" formatted="false">Feito, mas esta versão não pode enviar registos: guarda o registo numa pen USB.</string>
+    <string name="deep_queued" formatted="false">Feito: sem rede agora, o relatório será enviado sozinho quando houver internet.</string>
+    <string name="deep_running">Em curso: passo %1$d de %2$d…</string>
+    <string name="deep_sent" formatted="false">Feito: relatório enviado. Obrigado!</string>
+    <string name="deep_start" formatted="false">Iniciar</string>
+    <string name="deep_sub" formatted="false">Lê tudo o que é preciso para corrigir problemas e preparar as próximas versões, depois envia o registo. Só leitura, nenhum comando ao carro. Demora cerca de um minuto.</string>
+    <string name="deep_title" formatted="false">Diagnóstico completo</string>
+    <string name="power_kw">%1$s kW</string>
+    <string name="set_beside" formatted="false">Ao lado da bateria</string>
+    <string name="set_beside_sub" formatted="false">Consumo instantâneo em kW: a barra vai para a esquerda quando o carro recupera energia</string>
+    <string name="news_v036_1" formatted="false">Envio dos registos mais seguro (através de um servidor ponte)</string>
+    <string name="news_v036_2" formatted="false">Diagnóstico completo em Definições → Sistema, também automático após cada atualização</string>
+    <string name="news_v036_3" formatted="false">Barras do sistema paradas durante as chamadas (obrigado a lukeet332); a verificação de funções espera pela rede e pelos serviços após o arranque</string>
+    <string name="news_v036_4" formatted="false">Consumo instantâneo ao lado da bateria (opcional); capa com CarPlay procurada também noutras sessões</string>
 </resources>

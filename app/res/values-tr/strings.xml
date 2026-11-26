@@ -619,4 +619,25 @@
     <string name="news_v035_4" formatted="false">Telefon bağlıyken kaynaklar arasında Android Auto ve CarPlay; daha büyük şarkı ve istasyon yazıları</string>
     <string name="news_v035_5" formatted="false">Klima menüsünde hava yönü, buğu giderme ve arka cam ısıtma (sommistica\'ya teşekkürler); direksiyonda ileri/geri tuşları</string>
     <string name="news_v035_6" formatted="false">Farlar açıkken koyu tema (isteğe bağlı), elle seçilen tema artık geri dönmez; Geri dönmek için yukarı kaydır ve yukarıdan kaydırma (isteğe bağlı)</string>
+    <string name="beside_battery" formatted="false">Batarya</string>
+    <string name="beside_both" formatted="false">İkisi de</string>
+    <string name="beside_power" formatted="false">Anlık tüketim</string>
+    <string name="check_waiting" formatted="false">Bekleniyor</string>
+    <string name="deep_auto" formatted="false">Her güncellemeden sonra otomatik tanılama</string>
+    <string name="deep_auto_sub" formatted="false">Her sürümde bir kez, araç dururken ve internet varken. Yalnızca okuma.</string>
+    <string name="deep_failed" formatted="false">Rapor kaydedilmedi: daha sonra tekrar dene.</string>
+    <string name="deep_no_logs" formatted="false">Tamam, ancak bu sürüm günlük gönderemiyor: günlüğü USB belleğe kaydet.</string>
+    <string name="deep_queued" formatted="false">Tamam: şu an ağ yok, internet gelince rapor kendiliğinden gönderilecek.</string>
+    <string name="deep_running">Sürüyor: %2$d adımdan %1$d.…</string>
+    <string name="deep_sent" formatted="false">Tamam: rapor gönderildi. Teşekkürler!</string>
+    <string name="deep_start" formatted="false">Başlat</string>
+    <string name="deep_sub" formatted="false">Sorunları düzeltmek ve sonraki sürümleri hazırlamak için gereken her şeyi okur, sonra günlüğü gönderir. Yalnızca okuma, araca komut yok. Yaklaşık bir dakika sürer.</string>
+    <string name="deep_title" formatted="false">Tam tanılama</string>
+    <string name="power_kw">%1$s kW</string>
+    <string name="set_beside" formatted="false">Bataryanın yanında</string>
+    <string name="set_beside_sub" formatted="false">Anlık tüketim kW olarak: araç enerji geri kazanınca çubuk sola gider</string>
+    <string name="news_v036_1" formatted="false">Daha güvenli günlük gönderimi (aracı sunucu üzerinden)</string>
+    <string name="news_v036_2" formatted="false">Ayarlar → Sistem içinde tam tanılama, her güncellemeden sonra otomatik de</string>
+    <string name="news_v036_3" formatted="false">Aramalarda sistem çubukları sabit kalır (lukeet332\'ye teşekkürler); işlev kontrolü açılıştan sonra ağı ve servisleri bekler</string>
+    <string name="news_v036_4" formatted="false">Pilin yanında anlık tüketim (isteğe bağlı); CarPlay kapağı başka oturumlarda da aranır</string>
 </resources>

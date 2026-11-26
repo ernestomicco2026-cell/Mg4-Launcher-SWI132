@@ -266,7 +266,7 @@ public final class Updater {
                 Offline.failed("aggiornamenti", e);
             }
             java.util.List<Notice> notices = readNotices(lang);
-            lastAuto = new java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.ITALY).format(new java.util.Date());
+            lastAuto = new java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.US).format(new java.util.Date());
             Release fr = r;
             if (r == null) statusLine("non letto (" + err + ")", null);
             else statusLine(r.newer ? "versione nuova" : "già aggiornato", r);

@@ -619,4 +619,25 @@
     <string name="news_v035_4" formatted="false">Android Auto i CarPlay wśród źródeł przy podłączonym telefonie; większe tytuły utworu i stacji</string>
     <string name="news_v035_5" formatted="false">Kierunek nawiewu, odparowanie i ogrzewanie tylnej szyby w menu Klimatyzacja (dzięki sommistica); przyciski dalej/wstecz na kierownicy</string>
     <string name="news_v035_6" formatted="false">Ciemny motyw przy włączonych światłach (do wyboru), ręcznie wybrany motyw już nie wraca; Przesuń w górę, aby wrócić, i panel z góry (opcjonalne)</string>
+    <string name="beside_battery" formatted="false">Bateria</string>
+    <string name="beside_both" formatted="false">Oba</string>
+    <string name="beside_power" formatted="false">Chwilowe zużycie</string>
+    <string name="check_waiting" formatted="false">Oczekiwanie</string>
+    <string name="deep_auto" formatted="false">Automatyczna diagnostyka po każdej aktualizacji</string>
+    <string name="deep_auto_sub" formatted="false">Raz na wersję, gdy samochód stoi i jest internet. Tylko odczyt.</string>
+    <string name="deep_failed" formatted="false">Raport nie został zapisany: spróbuj później.</string>
+    <string name="deep_no_logs" formatted="false">Gotowe, ale ta wersja nie może wysyłać dzienników: zapisz dziennik na pendrive.</string>
+    <string name="deep_queued" formatted="false">Gotowe: teraz brak sieci, raport zostanie wysłany sam, gdy pojawi się internet.</string>
+    <string name="deep_running">W toku: krok %1$d z %2$d…</string>
+    <string name="deep_sent" formatted="false">Gotowe: raport wysłany. Dziękujemy!</string>
+    <string name="deep_start" formatted="false">Uruchom</string>
+    <string name="deep_sub" formatted="false">Odczytuje wszystko, co potrzebne do naprawy problemów i przygotowania kolejnych wersji, a potem wysyła dziennik. Tylko odczyt, bez poleceń dla samochodu. Trwa około minuty.</string>
+    <string name="deep_title" formatted="false">Pełna diagnostyka</string>
+    <string name="power_kw">%1$s kW</string>
+    <string name="set_beside" formatted="false">Obok baterii</string>
+    <string name="set_beside_sub" formatted="false">Chwilowe zużycie w kW: pasek idzie w lewo, gdy samochód odzyskuje energię</string>
+    <string name="news_v036_1" formatted="false">Bezpieczniejsze wysyłanie logów (przez serwer pośredniczący)</string>
+    <string name="news_v036_2" formatted="false">Pełna diagnostyka w Ustawieniach → System, także automatycznie po każdej aktualizacji</string>
+    <string name="news_v036_3" formatted="false">Paski systemowe nie migają podczas rozmów (dzięki lukeet332); kontrola funkcji po starcie czeka na sieć i usługi</string>
+    <string name="news_v036_4" formatted="false">Chwilowe zużycie obok baterii (do wyboru); okładka z CarPlay szukana także w innych sesjach</string>
 </resources>

@@ -1,6 +1,6 @@
 {
-  "version": "0.3.5",
-  "apk": "releases/MG4Launcher-SWI132-0.3.5.apk",
-  "size": 1259582,
-  "notes": "Android Auto, chiavetta USB e radio regolari all'accensione (il riavvio del dongle interviene solo con un dongle vero); Spegni la vettura dalle impostazioni (solo in P, ricontrollata prima del comando); riquadro auto allineato alla SWI68; navigatore in finestra nel pannello mappe (sperimentale, se il navigatore lo permette); animazione di ricarica: pulsante Simula ricarica, preparazione molto più veloce e log inviato da solo alla prima ricarica; Android Auto e CarPlay tra le sorgenti quando il telefono è collegato, con titolo e artista (e copertina, se trovata); testi del brano e della stazione più grandi; Scorri in su per tornare (facoltativo); tendina dall'alto a schermo intero (facoltativa); scegli i 5 pulsanti della barra di ricarica; tema scuro quando i fari sono accesi (a scelta); tema scelto a mano che non torna più indietro; tasti avanti/indietro al volante; direzione dell'aria, sbrinamento e lunotto nel menu Clima (grazie a sommistica); niente più falsi errori delle stazioni e dei fari."
+  "version": "0.3.6",
+  "apk": "releases/MG4Launcher-SWI132-0.3.6.apk",
+  "size": 1304638,
+  "notes": "Invio dei log più sicuro (tramite server ponte); Diagnostica completa in Impostazioni → Sistema, anche automatica dopo ogni aggiornamento; Controllo funzioni che aspetta rete e servizi dopo l'accensione; barre di sistema ferme durante le chiamate (grazie a lukeet332); copertina con CarPlay cercata anche nelle altre sessioni; consumo istantaneo accanto alla batteria (a scelta)."
 }
