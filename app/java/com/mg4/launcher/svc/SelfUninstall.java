@@ -38,6 +38,7 @@ public final class SelfUninstall {
         //    home MG, nemmeno se il launcher torna davanti mentre la conferma di sistema è a schermo.
         HomeLock.beginUninstall(app);
         Diag.put("disinstalla", "richiesta · segno disinstallazione in corso");
+        DayNight.restoreSkinMode(app);   // 0.3.5 (punto 14): tema SAIC com'era prima della scelta manuale
         new Thread(() -> {
             // 1) home MG riattivata, rimessa come predefinita e VERIFICATA (fino a 3 tentativi)
             boolean ok = false;

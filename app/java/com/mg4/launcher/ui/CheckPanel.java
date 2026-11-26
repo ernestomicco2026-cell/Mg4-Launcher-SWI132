@@ -106,6 +106,13 @@ public final class CheckPanel {
             }
 
             @Override
+            public void onKeysStep(boolean next, int seconds) {
+                if (ki < 0 || seconds <= 0) return;
+                marks[ki].setText("…");
+                subs[ki].setText(L.f(next ? R.string.check_press_next : R.string.check_press_prev, String.valueOf(seconds)));
+            }
+
+            @Override
             public void onLightsCountdown(int seconds) {
                 for (int i = 0; i < items.size(); i++) {
                     if (!"fari".equals(items.get(i).key) || seconds <= 0) continue;

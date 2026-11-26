@@ -309,6 +309,7 @@ public final class MediaClient {
 
     public MediaClient(Context c) {
         ctx = c.getApplicationContext();
+        instanceNow = this;
         sp = ctx.getSharedPreferences("mg4launcher", Context.MODE_PRIVATE);
         radio = new ServiceLink(ctx, "radio", ServiceLink.byAction(RADIO_PKG, RADIO_ACTION));
         radio.setOnConnected(() -> post(this::registerRadioCallbacks));
@@ -367,8 +368,14 @@ public final class MediaClient {
         bg.post(loop);
         // 0.3.1 (punto 10): all'accensione si riprende l'ultima sorgente usata davvero, se nel frattempo non suona nulla.
         // Solo all'avvio dell'auto (non quando il launcher si riavvia da solo, es. dopo un aggiornamento) e al risveglio.
-        if (android.os.SystemClock.elapsedRealtime() < 5 * 60_000L) bg.postDelayed(() -> resumeLastSource("accensione", 0), 9000);
-        else Diag.put("media.avvio", "launcher riavviato con l'auto già accesa: nessuna ripresa");
+        // 0.3.5 (SWI68 1.0.6, issue #43): ripresa a OGNI accensione, qualunque strada prenda l'avvio
+        String sys = takeSystemPowerOn();
+        String pw = pendingPowerOn != null ? pendingPowerOn : sys;
+        pendingPowerOn = null;
+        if (pw != null) onPowerOn(pw);
+        else if (android.os.SystemClock.elapsedRealtime() < 5 * 60_000L) onPowerOn("avvio del launcher all'accensione");
+        else powerOnSkipped("launcher avviato " + android.os.SystemClock.elapsedRealtime() / 60_000
+                + " min dopo l'accensione (aggiornamento o riavvio a metà viaggio)");
         try {
             IntentFilter f = new IntentFilter(Intent.ACTION_SCREEN_ON);
             f.addAction(Intent.ACTION_SCREEN_OFF);
@@ -387,8 +394,10 @@ public final class MediaClient {
             }
             // risveglio dopo almeno 2 minuti di schermo spento = nuova accensione dell'auto
             if (screenOffAt > 0 && android.os.SystemClock.elapsedRealtime() - screenOffAt > 120_000L && bg != null) {
+                long off = android.os.SystemClock.elapsedRealtime() - screenOffAt;
                 chosen = 0;
-                bg.postDelayed(() -> resumeLastSource("risveglio", 0), 9000);
+                BootLog.powerOn("risveglio dello schermo dopo " + (off / 60_000) + " min");
+                onPowerOn("risveglio dello schermo dopo " + (off / 60_000) + " min");
             }
         }
     };
@@ -427,11 +436,17 @@ public final class MediaClient {
         if (bg != null) bg.post(r);
     }
 
+    private boolean radioMarked;
+
     private final Runnable loop = new Runnable() {
         @Override
         public void run() {
             if (!running) return;
             poll();
+            if (!radioMarked && radio.binder() != null) {
+                radioMarked = true;
+                BootLog.mark(ctx, "radio", null);
+            }
             bg.postDelayed(this, 1000);
         }
     };
@@ -647,12 +662,148 @@ public final class MediaClient {
                 break;
             case SRC_CARPLAY:
             case SRC_AAUTO:
+                fillProjection(s, c);
                 if (s.title.isEmpty()) s.title = src == SRC_CARPLAY ? "CarPlay" : "Android Auto";
                 if (s.subtitle.isEmpty()) s.subtitle = s.deviceName.isEmpty() ? com.mg4.launcher.L.s(R.string.from_phone) : s.deviceName;
                 break;
             default:
                 break;
         }
+    }
+
+    // ---- 0.3.5 (SWI68 1.0.6, issue #28 e #30): Android Auto / CarPlay tra le sorgenti, titolo, artista, copertina ----
+
+    /** Sessione media dell'app AllGo (com.allgo.app.androidauto o com.allgo.carplay.service), null se non c'è. */
+    private MediaController allgoSession() {
+        try {
+            android.media.session.MediaSessionManager msm =
+                    (android.media.session.MediaSessionManager) ctx.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController mc : msm.getActiveSessions(null)) {
+                String p = mc.getPackageName();
+                if ("com.allgo.app.androidauto".equals(p) || "com.allgo.carplay.service".equals(p)) return mc;
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    /** Tocco sul pulsante CarPlay/AA tra le sorgenti: play alla sessione AllGo, altrimenti il tasto del servizio. */
+    public void playProjection() {
+        post(() -> {
+            MediaController a = allgoSession();
+            try {
+                if (a != null) {
+                    a.getTransportControls().play();
+                    Diag.put("carplay.tasto", "play alla sessione " + a.getPackageName());
+                } else {
+                    remotePlay(true);
+                    Diag.put("carplay.tasto", "play al servizio RemoteUI (nessuna sessione AllGo)");
+                }
+            } catch (Exception e) {
+                Diag.error("carplay.play", e.toString());
+            }
+        });
+    }
+
+    private String coverUri;
+    private Bitmap coverUriBmp;
+    private String lastProjStudy;
+
+    /**
+     * Titolo e artista: sessione RemoteUI del servizio media; se vuota, la sessione dell'app AllGo. Copertina: si
+     * provano tutte le fonti (immagini ALBUM_ART/ART/DISPLAY_ICON, indirizzi *_URI, immagine della voce in coda) delle
+     * due sessioni; la prima trovata va in s.logo. Riga media.proiezione per ogni fonte: sì/no e dimensioni, MAI testi.
+     */
+    private void fillProjection(State s, MediaController remoteC) {
+        MediaController a = allgoSession();
+        if (s.title.isEmpty() && a != null && a.getMetadata() != null) {
+            MediaMetadata m = a.getMetadata();
+            s.title = nz(m.getString(MediaMetadata.METADATA_KEY_TITLE));
+            s.subtitle = join(m.getString(MediaMetadata.METADATA_KEY_ARTIST), m.getString(MediaMetadata.METADATA_KEY_ALBUM));
+            if (s.durationMs <= 0) s.durationMs = m.getLong(MediaMetadata.METADATA_KEY_DURATION);
+        }
+        StringBuilder st = new StringBuilder(s.deviceType == DEV_AAUTO ? "AA" : "CarPlay");
+        st.append(" · titolo ").append(s.title.isEmpty() ? "no" : "sì").append(" · artista ").append(s.subtitle.isEmpty() ? "no" : "sì");
+        Bitmap found = null;
+        String foundFrom = "";
+        Object[][] srcs = {{"RemoteUI", remoteC}, {a == null ? "AllGo" : a.getPackageName(), a}};
+        for (Object[] sc : srcs) {
+            String name = (String) sc[0];
+            MediaController mc = (MediaController) sc[1];
+            if (mc == null) {
+                st.append(" | ").append(name).append(": sessione assente");
+                continue;
+            }
+            MediaMetadata m = mc.getMetadata();
+            st.append(" | ").append(name).append(':');
+            String[] bk = {MediaMetadata.METADATA_KEY_ALBUM_ART, MediaMetadata.METADATA_KEY_ART, MediaMetadata.METADATA_KEY_DISPLAY_ICON};
+            String[] bn = {"ALBUM_ART", "ART", "DISPLAY_ICON"};
+            for (int i = 0; i < bk.length; i++) {
+                Bitmap bm = m == null ? null : m.getBitmap(bk[i]);
+                st.append(' ').append(bn[i]).append(bm == null ? " no" : " " + bm.getWidth() + "×" + bm.getHeight());
+                if (bm != null && found == null) {
+                    found = bm;
+                    foundFrom = name + " " + bn[i];
+                }
+            }
+            String[] uk = {MediaMetadata.METADATA_KEY_ALBUM_ART_URI, MediaMetadata.METADATA_KEY_ART_URI, MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI};
+            String[] un = {"ALBUM_ART_URI", "ART_URI", "DISPLAY_ICON_URI"};
+            for (int i = 0; i < uk.length; i++) {
+                String u = m == null ? null : m.getString(uk[i]);
+                if (u == null || u.isEmpty()) {
+                    st.append(' ').append(un[i]).append(" no");
+                    continue;
+                }
+                Bitmap bm = loadUri(u);
+                String scheme = u.contains(":") ? u.substring(0, u.indexOf(':')) : "?";
+                st.append(' ').append(un[i]).append(" sì (").append(scheme).append(bm == null ? ", non leggibile)" : ", " + bm.getWidth() + "×" + bm.getHeight() + ")");
+                if (bm != null && found == null) {
+                    found = bm;
+                    foundFrom = name + " " + un[i];
+                }
+            }
+            try {
+                java.util.List<android.media.session.MediaSession.QueueItem> q = mc.getQueue();
+                PlaybackState ps = mc.getPlaybackState();
+                long activeId = ps == null ? -1 : ps.getActiveQueueItemId();
+                android.media.MediaDescription d = null;
+                if (q != null) for (android.media.session.MediaSession.QueueItem it : q) if (it.getQueueId() == activeId) d = it.getDescription();
+                if (d == null && q != null && !q.isEmpty()) d = q.get(0).getDescription();
+                Bitmap ib = d == null ? null : d.getIconBitmap();
+                if (ib == null && d != null && d.getIconUri() != null) ib = loadUri(d.getIconUri().toString());
+                st.append(" coda ").append(q == null ? "assente" : q.size() + " voci").append(" immagine ").append(ib == null ? "no" : ib.getWidth() + "×" + ib.getHeight());
+                if (ib != null && found == null) {
+                    found = ib;
+                    foundFrom = name + " coda";
+                }
+            } catch (Throwable e) {
+                st.append(" coda non leggibile");
+            }
+        }
+        s.logo = found;
+        st.append(" · copertina mostrata ").append(found == null ? "no (icona AA/CarPlay)" : "sì da " + foundFrom);
+        String txt = st.toString();
+        if (!txt.equals(lastProjStudy)) {
+            lastProjStudy = txt;
+            Diag.put("media.proiezione", txt);
+        }
+    }
+
+    /** Immagine da un indirizzo content://, file:// o android.resource:// (la stessa si tiene in memoria). */
+    private Bitmap loadUri(String u) {
+        if (u.equals(coverUri)) return coverUriBmp;
+        Bitmap bm = null;
+        if (!u.startsWith("http")) {
+            try (java.io.InputStream in = ctx.getContentResolver().openInputStream(android.net.Uri.parse(u))) {
+                android.graphics.BitmapFactory.Options o = new android.graphics.BitmapFactory.Options();
+                o.inSampleSize = 1;
+                bm = android.graphics.BitmapFactory.decodeStream(in, null, o);
+            } catch (Throwable ignored) {
+            }
+        }
+        coverUri = u;
+        coverUriBmp = bm;
+        return bm;
     }
 
     /** Radio: sessione RadioMBService (nome, testo, logo DAB, stato) + frequenza da IRadioManager. */
@@ -716,14 +867,20 @@ public final class MediaClient {
         // elenco delle stazioni della banda in onda
         List<Station> list = band == BAND_DAB ? dabList : fmList;
         String from = band == BAND_DAB ? dabListFrom : fmListFrom;
-        if (list.isEmpty()) {
-            // 0.3.2 (punto 7): elenco vuoto → si mostrano i preferiti della stessa banda
-            List<Station> fb = new ArrayList<>();
-            for (Station st : favorites) if ((st.band == BAND_DAB) == (band == BAND_DAB)) fb.add(st);
-            if (!fb.isEmpty()) {
-                list = fb;
-                from = "preferiti (elenco vuoto)";
-            }
+        // 0.3.2 (punto 7): elenco vuoto → preferiti della stessa banda. 0.3.5 (punto 17): fonti a confronto (elenco del
+        // servizio/salvato, stazioni DAB ascoltate come la SWI69 EH32, preferiti): si usa quella che dà più stazioni
+        List<Station> fb = new ArrayList<>();
+        for (Station st : favorites) if ((st.band == BAND_DAB) == (band == BAND_DAB)) fb.add(st);
+        int nList = list.size();
+        if (fb.size() > nList) {
+            list = fb;
+            from = nList == 0 ? "preferiti (elenco vuoto)" : "preferiti (più stazioni dell'elenco: " + fb.size() + " contro " + nList + ")";
+        }
+        String cmp = (band == BAND_DAB ? "DAB" : "FM") + " · " + (band == BAND_DAB ? dabListFrom : fmListFrom) + " " + nList
+                + " · preferiti " + fb.size() + " → scelta " + from;
+        if (!cmp.equals(sourcesNote)) {
+            sourcesNote = cmp;
+            Diag.put("radio.elenco.fonti", cmp);
         }
         for (Station st : list) {
             if (st.key.isEmpty()) st.key = StationLogos.key(st.band, st.sid, st.khz, st.name);
@@ -1084,6 +1241,27 @@ public final class MediaClient {
      * collegato e la sua sessione pronta (fino a 20 s, controllo ogni secondo), poi si avvia con i controlli lunghi.
      * Se nel frattempo l'utente sceglie un'altra sorgente la ripresa si ferma. Log radio.pronta e radio.tentativi.
      */
+    private static final int RADIO_EXTRA_ROUNDS = 2;
+    private static final long RADIO_ROUND_MAX_WAIT_MS = 60_000;
+    private int radioRound;
+
+    /** 0.3.5: attesa tra due giri: si riparte appena il servizio radio e la sua sessione sono pronti, al massimo dopo 60 s. */
+    private void waitRadioRound(long since, int run, String why) {
+        if (run != radioRun || chosen != SRC_RADIO) {
+            Diag.put("radio.tentativi", "avvio RADIO: giro annullato, l'utente ha scelto un'altra sorgente");
+            radioRound = 0;
+            return;
+        }
+        long waited = SystemClock.uptimeMillis() - since;
+        boolean ready = radio.binder() != null && radioMbs.ready();
+        if (ready || waited >= RADIO_ROUND_MAX_WAIT_MS) {
+            radioWaits = RADIO_RESUME_MS;
+            startRadio(why, 0, true);
+            return;
+        }
+        bg.postDelayed(() -> waitRadioRound(since, run, why), 2000);
+    }
+
     private void waitRadioReady(String why, int run) {
         if (run != radioRun || chosen != SRC_RADIO) {
             Diag.put("radio.tentativi", "avvio RADIO: annullato, l'utente ha scelto un'altra sorgente");
@@ -1111,6 +1289,7 @@ public final class MediaClient {
         if (attempt == 0 && radioPowerOn) {
             // ripresa all'accensione: prima si aspetta il sintonizzatore
             radioPowerOn = false;
+            radioRound = 0;
             radioRun++;
             radioStartAt = SystemClock.uptimeMillis();
             waitRadioReady(why + " (accensione)", radioRun);
@@ -1136,9 +1315,16 @@ public final class MediaClient {
         String state = (service ? "servizio pronto" : "servizio non pronto") + ", " + (tc != null ? "play inviato" : "sessione non collegata");
         if (attempt >= waits.length) {
             Diag.put("radio.avvio", why + " · tentativo " + (attempt + 1) + ": " + state + " · " + (radioMbs.isPlaying() ? "in onda" : "non partita, smetto"));
-            if (power) Diag.put("radio.tentativi", "avvio RADIO: " + (radioMbs.isPlaying() ? "riuscito" : "non riuscito") + " · attesa servizio "
-                    + Math.round(radioReadyWaited / 1000.0) + " s · tentativi " + (attempt + 1) + " · totale "
-                    + Math.round((SystemClock.uptimeMillis() - radioStartAt) / 1000.0) + " s");
+            boolean on = radioMbs.isPlaying();
+            if (power) Diag.put("radio.tentativi", "avvio RADIO: " + (on ? "riuscito" : "non riuscito") + " · giro " + (radioRound + 1)
+                    + " · attesa servizio " + Math.round(radioReadyWaited / 1000.0) + " s · tentativi " + (attempt + 1) + " · totale "
+                    + Math.round((SystemClock.uptimeMillis() - radioStartAt) / 1000.0) + " s · " + clock());
+            // 0.3.5 (SWI68 1.0.6): un altro giro quando il servizio radio è pronto, o comunque dopo 60 s (al massimo 2 giri)
+            if (power && !on && radioRound < RADIO_EXTRA_ROUNDS && chosen == SRC_RADIO && run == radioRun) {
+                radioRound++;
+                Diag.put("radio.tentativi", "avvio RADIO: nuovo giro " + (radioRound + 1) + " quando la radio è pronta (al massimo 60 s) · " + clock());
+                waitRadioRound(SystemClock.uptimeMillis(), run, why);
+            } else if (power) radioRound = 0;
             return;
         }
         Diag.put("radio.avvio", why + " · tentativo " + (attempt + 1) + ": " + state);
@@ -1197,16 +1383,83 @@ public final class MediaClient {
      * ripreso da sola, la si lascia). Se la sorgente non è disponibile (telefono non collegato, chiavetta assente) si
      * passa alla radio. Per CarPlay/Android Auto si aspetta il collegamento del telefono fino a 30 s.
      */
+    // ---- 0.3.5 (SWI68 1.0.6, issue #43): ripresa a OGNI accensione, media.avvio sempre scritto ----------------------
+    private static volatile MediaClient instanceNow;
+    private static volatile String systemPowerOn;
+    private static final android.os.Handler MAIN = new android.os.Handler(android.os.Looper.getMainLooper());
+    private static final long SYSTEM_WAIT_MS = 4 * 60_000L;
+    private volatile String pendingPowerOn;
+    private long lastPowerOn = Long.MIN_VALUE / 2;
+    private String lastPowerOnWhy = "";
+
+    private static String clock() {
+        return new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.ITALY).format(new java.util.Date());
+    }
+
+    /**
+     * Accensione vista dal sistema (BOOT_COMPLETED o servizio di accessibilità), anche se la schermata del launcher non
+     * è ancora stata creata: la ripresa parte appena i servizi media sono avviati. Se in 4 minuti non partono,
+     * media.avvio lo scrive comunque ("non eseguita").
+     */
+    public static void powerOnFromSystem(String why) {
+        MediaClient m = instanceNow;
+        if (m != null && m.bg != null) {
+            m.onPowerOn(why);
+            return;
+        }
+        if (systemPowerOn != null) return;
+        systemPowerOn = why;
+        MAIN.postDelayed(() -> {
+            String w = systemPowerOn;
+            if (w == null) return;
+            systemPowerOn = null;
+            Diag.put("media.avvio", "ripresa non eseguita: servizi media del launcher non partiti entro 4 min (" + w + ") · " + clock());
+        }, SYSTEM_WAIT_MS);
+    }
+
+    private static String takeSystemPowerOn() {
+        String w = systemPowerOn;
+        systemPowerOn = null;
+        return w;
+    }
+
+    /** Accensione in cui la ripresa non si fa: media.avvio lo dice lo stesso, con il motivo. */
+    public static void powerOnSkipped(String why) {
+        if (systemPowerOn != null) return;
+        MediaClient m = instanceNow;
+        if (m != null && android.os.SystemClock.uptimeMillis() - m.lastPowerOn < 5 * 60_000L) return;
+        Diag.put("media.avvio", "ripresa non eseguita: " + why + " · " + clock());
+    }
+
+    /** Accensione (avvio del launcher, del sistema o risveglio): dopo 9 s si riprende l'ultima sorgente. */
+    public void onPowerOn(String why) {
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now - lastPowerOn < 30_000) {
+            Diag.putQuiet("media.avvioDoppio", "\"" + why + "\" ignorata: ripresa già avviata " + (now - lastPowerOn) / 1000 + " s fa (" + lastPowerOnWhy + ")");
+            return;
+        }
+        lastPowerOn = now;
+        lastPowerOnWhy = why;
+        if (bg == null) {
+            pendingPowerOn = why;
+            return;
+        }
+        Diag.put("media.avvio", why + " · ripresa tra 9 s · " + clock());
+        bg.postDelayed(() -> resumeLastSource(why, 0), 9000);
+    }
+
     private void resumeLastSource(String why, int waited) {
         int saved = sp.getInt("mediaUltimaSorgente", 0);
         int active = prevActive;
         if (active != 0) {
             if (chosen == 0) chosen = active;
-            Diag.put("media.avvio", why + " · salvata " + sourceName(ctx, saved) + " · già in riproduzione " + sourceName(ctx, active) + ": lasciata");
+            Diag.put("media.avvio", why + " · salvata " + sourceName(ctx, saved) + " · già in riproduzione " + sourceName(ctx, active) + ": lasciata · " + clock());
+            BootLog.mark(ctx, "ripresa", "già in riproduzione");
             return;
         }
         if (chosen != 0) {
-            Diag.put("media.avvio", why + " · salvata " + sourceName(ctx, saved) + " · l'utente ha già scelto " + sourceName(ctx, chosen));
+            Diag.put("media.avvio", why + " · salvata " + sourceName(ctx, saved) + " · l'utente ha già scelto " + sourceName(ctx, chosen) + " · " + clock());
+            BootLog.mark(ctx, "ripresa", "scelta dell'utente");
             return;
         }
         int target;
@@ -1244,9 +1497,12 @@ public final class MediaClient {
                 break;
         }
         Diag.put("media.avvio", why + " · salvata " + (saved == 0 ? "nessuna" : sourceName(ctx, saved)) + " · ripresa "
-                + sourceName(ctx, target) + note + " · attesa " + (waited / 1000) + " s");
+                + sourceName(ctx, target) + note + " · attesa " + (waited / 1000) + " s · " + clock());
+        BootLog.mark(ctx, "ripresa", sourceName(ctx, target));
         if (target == SRC_RADIO) radioPowerOn = true;
+        boolean opened = radioOpenedFlag;
         selectSource(target);
+        radioOpenedFlag = opened;   // la ripresa automatica non conta come "Radio aperta" (Controllo funzioni, punto 4)
     }
 
     // ---- 0.3.2 (punto 4): attesa del Bluetooth all'accensione -------------------------------------
@@ -1414,7 +1670,7 @@ public final class MediaClient {
         saveList("radio_dab_elenco", out);
         dabListFrom = "stazioni DAB ascoltate";
     }
-    private String listNote = "";
+    private String listNote = "", sourcesNote = "";
 
     private void noteList(int band, String from, int n) {
         String txt = "fonte " + from + " · " + n + " stazioni (" + (band == BAND_DAB ? "DAB" : "FM") + ")";
@@ -1533,6 +1789,18 @@ public final class MediaClient {
     /** L'utente ha scelto o comandato la radio dal launcher: in quel caso la radio non va mai "corretta". */
     private void markRadioByUser() {
         radioUserAt = android.os.SystemClock.uptimeMillis();
+        radioOpenedFlag = true;
+    }
+
+    private static volatile boolean radioOpenedFlag;
+
+    /** 0.3.5 (punto 4): la Radio è stata aperta dall'utente (sorgente Radio scelta nel launcher o app Radio davanti). */
+    public static boolean radioOpened() {
+        return radioOpenedFlag;
+    }
+
+    public static void noteRadioAppOpened() {
+        radioOpenedFlag = true;
     }
 
     /** Chiamata a ogni giro di poll(), sul thread di lavoro. */

@@ -38,6 +38,8 @@ public final class VehicleClient {
     private static final int EV_RANGE = 12;           // int  getCurrentRange
     private static final int EV_CHG_CTRL = 20;        // int  getChargeCtrlStatus
     private static final int EV_DISCHG_CTRL = 24;     // int  getDisChargeCtrl
+    /** 0.3.5 (solo studio, sola lettura): getDrivingBatteryHeatStatus (13 = set, MAI usato). */
+    private static final int EV_GET_BATTERY_HEAT = 14;
     public static final int CTRL_START = 1, CTRL_STOP = 2, CTRL_PREPARING = 3;
     /** Correnti di ricarica AC ammesse dall'auto (codici 1..4, CarBMSManager.ALTNG_CHRG_CRNT_*). */
     public static final String[] CURRENT_LABELS = {"6 A", "8 A", "16 A", "Max"};
@@ -54,6 +56,14 @@ public final class VehicleClient {
     private static final int AC_GET_OUT_TEMP = 25;    // float getOutSideTemperature
     private static final int AC_SWITCH_AC = 7, AC_GET_AC = 8;                 // switchACStatus / getACStatus
     private static final int AC_SWITCH_DEFROST = 27, AC_GET_DEFROST = 28;     // parabrezza
+    /**
+     * 0.3.5: direzione dell'aria e lunotto (ICarHvacService R43). setFanDirection(int) 17 / getFanDirection 18 con gli
+     * stessi sette modi SAIC di AirflowModes (verificato nell'app clima EH32, HvacMainFragment.onBlowClicked:
+     * 0 viso, 1 viso+piedi, 2 piedi, 3 parabrezza+piedi, 4 parabrezza, 5 tutti, 6 parabrezza+viso).
+     * switchRearDefrostStatus 29 (commuta, senza argomenti) / getRearDefrostStatus 30 (boolean).
+     */
+    private static final int AC_SET_FAN_DIR = 17, AC_GET_FAN_DIR = 18;
+    private static final int AC_SWITCH_REAR_DEFROST = 29, AC_GET_REAR_DEFROST = 30;
     // ricircolo, come la barra clima della home originale: "cambia" senza argomenti; 0 interno, 1 esterno, 2 auto
     private static final int AC_SWITCH_LOOP = 15, AC_GET_LOOP = 16;
     // SWI132: sedili e volante riscaldati, come l'app Clima originale HVAC_my24_ll (HvacManager / t11_eh32):
@@ -145,6 +155,10 @@ public final class VehicleClient {
         public int acTemp = -1;           // 15 = LO, 16..30, 31 = HI
         public int hvacPower = -1;
         public int acOn = -1, autoOn = -1, defrostOn = -1;   // 1 acceso, 0 spento, -1 sconosciuto
+        /** 0.3.5: direzione dell'aria (modi SAIC 0..6) e lunotto (1 acceso, 0 spento); -1 non disponibile. */
+        public int blowerMode = -1, rearDefrostOn = -1;
+        /** 0.3.5 (solo studio): riscaldamento intelligente batteria, valore grezzo; MIN_VALUE non leggibile. */
+        public int batteryHeat = Integer.MIN_VALUE;
         public int seatLeft = -1, seatRight = -1;          // 0..3, -1 non disponibile (dalla configurazione dell'auto)
         /** 0.3.1: limite di ricarica supportato (lettura valida dal gestore batteria). */
         public boolean chargeLimitSupported;
@@ -319,6 +333,14 @@ public final class VehicleClient {
                     Diag.put("veicolo.minutiRicarica", s.predictMinutes);
                     Diag.put("veicolo.comandoRicarica(ev)", Rpc.callInt(e, EV, EV_CHG_CTRL));
                     Diag.put("veicolo.statoScarica(V2L)", s.dischargeStatus);
+                    if (batteryHeatReadable) {
+                        try {
+                            s.batteryHeat = Rpc.callInt(e, EV, EV_GET_BATTERY_HEAT);   // sola lettura
+                        } catch (Exception ex) {
+                            batteryHeatReadable = false;
+                            Diag.put("ricarica.riscaldamentoBatteria", "non leggibile: " + ex.getClass().getSimpleName());
+                        }
+                    }
                 }
             } catch (Exception ex) {
                 Diag.error("ricarica", ex.toString());
@@ -354,6 +376,25 @@ public final class VehicleClient {
                     s.autoOn = held(AC_GET_AUTO, auto ? 1 : 0, now);
                     s.defrostOn = held(AC_GET_DEFROST, Rpc.callBool(a, AC, AC_GET_DEFROST) ? 1 : 0, now);
                     Diag.put("clima.ac/auto/sbrinamento", s.acOn + " / " + s.autoOn + " / " + s.defrostOn);
+                    // 0.3.5: letture facoltative, isolate (un errore non ferma gli altri comandi)
+                    if (fanDirSupported) {
+                        try {
+                            int mode = Rpc.callInt(a, AC, AC_GET_FAN_DIR);
+                            s.blowerMode = held(AC_GET_FAN_DIR, mode >= 0 && mode <= 6 ? mode : -1, now);
+                        } catch (Exception ex) {
+                            fanDirSupported = false;
+                            Diag.put("clima.direzione", "non leggibile: " + ex.getClass().getSimpleName());
+                        }
+                    }
+                    if (rearDefrostSupported) {
+                        try {
+                            s.rearDefrostOn = held(AC_GET_REAR_DEFROST, Rpc.callBool(a, AC, AC_GET_REAR_DEFROST) ? 1 : 0, now);
+                        } catch (Exception ex) {
+                            rearDefrostSupported = false;
+                            Diag.put("clima.lunotto", "non leggibile: " + ex.getClass().getSimpleName());
+                        }
+                    }
+                    Diag.put("clima.direzione/lunotto", s.blowerMode + " / " + s.rearDefrostOn);
                     if (loopSupported) {
                         try {
                             int loop = Rpc.callInt(a, AC, AC_GET_LOOP);
@@ -389,6 +430,7 @@ public final class VehicleClient {
     }
 
     private boolean loopSupported = true;
+    private boolean fanDirSupported = true, rearDefrostSupported = true, batteryHeatReadable = true;
 
     /** Unità della pressione scelta sul quadro (per "Automatica"). */
     private void readCluster(State s) {
@@ -981,6 +1023,132 @@ public final class VehicleClient {
         return 0;
     }
 
+    // ---- 0.3.5: spegnimento della vettura -----------------------------------------------------------------
+
+    /** Marcia P del servizio stato auto (CarState.getGearState). */
+    public static final int GEAR_P = 1;
+    /**
+     * Comando: servizio comfort SAIC dal "hub" (CarAdapterClient.queryClient(0xf), BIND_CODE_CAR_CARFORTABLET),
+     * ICarComfortabletService.setPowerModeSwitch(int) = transazione 8, valore 2 come il riquadro "Spegni" del SystemUI
+     * originale (PowerTile → CarComfortableController.setPowerModeSwitch(2)). Sulla SWI132 getPowerModeSwitch NON esiste:
+     * nel log si scrive "non presente". Accensione per la verifica: IGNITION_STATE di Android (2 spenta, 3 accessori, 4 on).
+     */
+    private static final int BIND_COMFORT = 0xf, COMFORT_SET_POWER_MODE = 8, POWER_OFF = 2;
+    private static final String COMFORT = "com.saicmotor.carapi.comfortablet.ICarComfortabletService";
+    private static final int IGNITION_STATE = 289408009;
+
+    /** Esito dello spegnimento: "inviato", "non in P", "non disponibile", "errore". */
+    public interface PowerOffDone {
+        void done(String result);
+    }
+
+    /** Marcia riletta adesso (servizio stato auto pronto), MIN_VALUE se non si legge. Da un thread di lavoro. */
+    private int gearNow() {
+        try {
+            IBinder st = sub(BIND_STATE);
+            if (st == null) return Integer.MIN_VALUE;
+            Boolean ok = Rpc.call(st, STATE_DESC, ST_SERVICE_READY, Rpc.NONE, p -> p.readInt() != 0);
+            if (ok == null || !ok) return Integer.MIN_VALUE;
+            int g = Rpc.callInt(st, STATE_DESC, ST_GEAR);
+            return g >= 0 && g <= 11 ? g : Integer.MIN_VALUE;
+        } catch (Exception e) {
+            forget(BIND_STATE);
+            return Integer.MIN_VALUE;
+        }
+    }
+
+    private int readyNow() {
+        try {
+            IBinder st = sub(BIND_STATE);
+            return st == null ? Integer.MIN_VALUE : Rpc.callInt(st, STATE_DESC, ST_EPTRDY);
+        } catch (Exception e) {
+            return Integer.MIN_VALUE;
+        }
+    }
+
+    private int ignitionNow() {
+        CarProps p = props;
+        if (p == null || !p.ready()) return Integer.MIN_VALUE;
+        Integer v = p.readLight(IGNITION_STATE, false, new String[1]);
+        return v == null ? Integer.MIN_VALUE : v;
+    }
+
+    /** Controllo funzioni (sola lettura): il servizio comfort risponde con l'interfaccia giusta? null = non si sa. */
+    public Boolean powerOffAvailable() {
+        try {
+            IBinder b = sub(BIND_COMFORT);
+            if (b == null) return hub.isConnected() ? Boolean.FALSE : null;
+            return COMFORT.equals(b.getInterfaceDescriptor());
+        } catch (Exception e) {
+            forget(BIND_COMFORT);
+            return Boolean.FALSE;
+        }
+    }
+
+    /** Riscaldamento intelligente batteria (solo studio, sola lettura, da un thread di lavoro). MIN_VALUE non leggibile. */
+    public int batteryHeat() {
+        try {
+            IBinder e = sub(BIND_EV);
+            return e == null ? Integer.MIN_VALUE : Rpc.callInt(e, EV, EV_GET_BATTERY_HEAT);
+        } catch (Exception ex) {
+            return Integer.MIN_VALUE;
+        }
+    }
+
+    /**
+     * Spegne la vettura. Solo in P (1) e ferma (sotto 1 km/h): marcia e velocità si RILEGGONO qui, subito prima del
+     * comando; se una delle due non si legge non si invia niente. Dopo 5 s si rilegge: "esito confermato" o "nessun effetto".
+     */
+    public void powerOff(PowerOffDone done) {
+        Handler mh = new Handler(Looper.getMainLooper());
+        if (bg == null) {
+            Diag.put("auto.spegnimento", "richiesto · servizio non collegato · non inviato");
+            mh.post(() -> done.done("errore"));
+            return;
+        }
+        bg.post(() -> {
+            String res;
+            int gear = gearNow();
+            float speed = speedKmh();
+            int ign = ignitionNow(), rdy = readyNow();
+            try {
+                if (gear != GEAR_P || Float.isNaN(speed) || speed >= 1f) res = "non in P";
+                else {
+                    IBinder c = sub(BIND_COMFORT);
+                    if (c == null || !COMFORT.equals(c.getInterfaceDescriptor())) res = "non disponibile";
+                    else {
+                        // ultimo controllo, subito prima dell'invio
+                        float sp2 = speedKmh();
+                        if (gearNow() != GEAR_P || Float.isNaN(sp2) || sp2 >= 1f) res = "non in P";
+                        else {
+                            Boolean r = Rpc.call(c, COMFORT, COMFORT_SET_POWER_MODE, p -> p.writeInt(POWER_OFF), p -> p.readInt() != 0);
+                            res = "inviato";
+                            Diag.put("auto.spegnimento.risposta", String.valueOf(r));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                res = "errore";
+                forget(BIND_COMFORT);
+                Diag.error("auto.spegnimento", e.toString());
+            }
+            Diag.put("auto.spegnimento", "richiesto · marcia " + gearName(gear == Integer.MIN_VALUE ? -1 : gear) + " · velocità "
+                    + (Float.isNaN(speed) ? "non letta" : String.format(java.util.Locale.ROOT, "%.1f", speed))
+                    + " · metodo ICarComfortabletService.setPowerModeSwitch(2) · getPowerModeSwitch non presente su SWI132"
+                    + " · accensione " + ign + " · ready " + rdy + " · esito " + res);
+            if ("inviato".equals(res)) bg.postDelayed(() -> checkPowerOff(ign, rdy), 5000);
+            String r = res;
+            mh.post(() -> done.done(r));
+        });
+    }
+
+    private void checkPowerOff(int ignBefore, int readyBefore) {
+        int ign = ignitionNow(), rdy = readyNow();
+        boolean off = (readyBefore == 1 && rdy == 0) || (ign != Integer.MIN_VALUE && ign <= 3 && (ignBefore == Integer.MIN_VALUE || ign < ignBefore));
+        Diag.put("auto.spegnimento", "dopo 5 s · accensione " + ignBefore + " → " + ign + " · ready " + readyBefore + " → " + rdy
+                + " · " + (off ? "esito confermato" : "nessun effetto"));
+    }
+
     // ---- pulsanti a commutazione ----------------------------------------------------------------
 
     private final Map<Integer, long[]> holds = new HashMap<>();   // codice lettura -> {valore, scadenza}
@@ -1038,6 +1206,36 @@ public final class VehicleClient {
 
     public void toggleFrontDefrost() {
         press(BIND_HVAC, AC, AC_SWITCH_DEFROST, false, AC_GET_DEFROST, last.defrostOn, "clima.sbrinamento");
+    }
+
+    /** 0.3.5: lunotto termico, separato dal parabrezza (commuta). */
+    public void toggleRearDefrost() {
+        if (last.rearDefrostOn < 0) return;
+        press(BIND_HVAC, AC, AC_SWITCH_REAR_DEFROST, false, AC_GET_REAR_DEFROST, predicted(AC_GET_REAR_DEFROST, last.rearDefrostOn), "clima.lunotto");
+    }
+
+    /** 0.3.5: apre o chiude una direzione dell'aria (sette modi SAIC, almeno una resta aperta). */
+    public void toggleAirDirection(int direction) {
+        if (bg == null || !last.connected || last.blowerMode < 0) return;
+        bg.post(() -> {
+            int current = predicted(AC_GET_FAN_DIR, last.blowerMode);
+            int next = AirflowModes.toggle(current, direction);
+            if (next == current) return;
+            try {
+                IBinder a = sub(BIND_HVAC);
+                if (a == null) return;
+                Rpc.call(a, AC, AC_SET_FAN_DIR, p -> p.writeInt(next));
+                hold(AC_GET_FAN_DIR, next);   // tocchi rapidi in ordine
+                Diag.put("comando.ultimo", "clima.direzione " + current + " → " + next);
+            } catch (Exception e) {
+                synchronized (holds) {
+                    holds.remove(AC_GET_FAN_DIR);
+                }
+                Diag.error("clima.direzione", e.toString());
+                forget(BIND_HVAC);
+            }
+            poll();
+        });
     }
 
     public void toggleRearFog() {

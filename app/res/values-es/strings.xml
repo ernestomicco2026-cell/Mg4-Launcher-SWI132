@@ -553,4 +553,70 @@
     <string name="chk_ready" formatted="false">READY leído</string>
     <string name="news_v034_1" formatted="false">Animación de carga: también arranca con la pantalla encendida y el coche parado en P; se detiene solo en READY, en movimiento o fuera de P</string>
     <string name="news_v034_2" formatted="false">Cable de carga detectado mejor; nueva prueba «READY leído» en la Comprobación de funciones; textos traducidos a todos los idiomas</string>
+    <string name="airflow_direction" formatted="false">Dirección del aire</string>
+    <string name="airflow_face" formatted="false">Cara</string>
+    <string name="airflow_feet" formatted="false">Pies</string>
+    <string name="airflow_front_clear" formatted="false">Desempañar parabrisas</string>
+    <string name="airflow_rear_heat" formatted="false">Luneta térmica</string>
+    <string name="airflow_window_clearing" formatted="false">Desempañado</string>
+    <string name="airflow_windscreen" formatted="false">Parabrisas</string>
+    <string name="anim_sim" formatted="false">Simular carga</string>
+    <string name="anim_sim_label" formatted="false">Simulación</string>
+    <string name="anim_sim_no_car" formatted="false">Para simular la carga, muestra el panel del coche (Ajustes → Inicio)</string>
+    <string name="anim_sim_sub" formatted="false">Solo simula el cable (conectado 25 s, carga completa 10 s, desconectado): READY, marcha y velocidad son los reales</string>
+    <string name="car_panel_hide" formatted="false">Ocultar</string>
+    <string name="car_panel_show" formatted="false">Mostrar</string>
+    <string name="cb_heat" formatted="false">Calefacción batería</string>
+    <string name="cb_heat_msg" formatted="false">Por ahora el launcher solo lee el estado y no envía comandos al coche. Se cambia en la app Energía del coche.</string>
+    <string name="cb_heat_title" formatted="false">Calefacción inteligente de la batería</string>
+    <string name="cb_reserve" formatted="false">Programada</string>
+    <string name="chk_batt_heat" formatted="false">Calefacción de la batería</string>
+    <string name="chk_power" formatted="false">Apagado disponible</string>
+    <string name="map_panel_directions" formatted="false">Indicaciones</string>
+    <string name="map_panel_window" formatted="false">Navegador en ventana</string>
+    <string name="nav_missing_code">Icono que falta: código %1$d</string>
+    <string name="nav_missing_error" formatted="false">No se pudo enviar el registro del icono que falta</string>
+    <string name="nav_missing_not_configured" formatted="false">El envío de registros no está disponible en esta versión</string>
+    <string name="nav_missing_queued" formatted="false">Registro guardado: se enviará en el próximo envío</string>
+    <string name="nav_missing_retry" formatted="false">Envío fallido: el registro está guardado y se reintentará</string>
+    <string name="nav_missing_send" formatted="false">Enviar al desarrollador el registro del icono que falta</string>
+    <string name="nav_missing_sending">Enviando el icono que falta %1$d…</string>
+    <string name="nav_missing_sent" formatted="false">Registro enviado al desarrollador</string>
+    <string name="pip_refused" formatted="false">El navegador en ventana no es compatible con este coche: el panel de mapas vuelve a ser como antes</string>
+    <string name="power_off" formatted="false">Apagar el coche</string>
+    <string name="power_off_btn" formatted="false">Apagar</string>
+    <string name="power_off_failed" formatted="false">No se pudo enviar el apagado</string>
+    <string name="power_off_msg" formatted="false">Si no tocas nada, se cancela en unos segundos.</string>
+    <string name="power_off_not_p" formatted="false">No se puede apagar: pon la P</string>
+    <string name="power_off_q" formatted="false">¿Apagar el coche?</string>
+    <string name="power_off_sub" formatted="false">Como el botón del coche: solo en P, con confirmación</string>
+    <string name="power_off_unavailable" formatted="false">El apagado no está disponible ahora</string>
+    <string name="search_destination" formatted="false">Buscar un destino</string>
+    <string name="set_charge_pick" formatted="false">Botones de la barra de carga</string>
+    <string name="set_charge_pick_btn" formatted="false">Elegir</string>
+    <string name="set_charge_pick_sub" formatted="false">Toca hasta 5 botones, en el orden en que quieres verlos. Solo aparecen los que el coche admite.</string>
+    <string name="set_charge_pick_wait" formatted="false">El coche aún no está conectado: no se sabe qué botones admite. Vuelve a intentarlo en breve.</string>
+    <string name="set_map_panel" formatted="false">Contenido del panel de mapas (experimental)</string>
+    <string name="set_map_panel_sub" formatted="false">Indicaciones como hoy, o el navegador en una ventana solo para ver: un toque lo abre a pantalla completa</string>
+    <string name="set_power_btn" formatted="false">Botón Apagar el coche en la barra inferior</string>
+    <string name="set_power_btn_sub" formatted="false">Misma confirmación que en ajustes; solo funciona en P</string>
+    <string name="set_side_widget" formatted="false">En lugar del coche</string>
+    <string name="set_side_widget_sub" formatted="false">Reloj y fecha grandes, mapa, multimedia o favoritos del teléfono (los mismos de la barra)</string>
+    <string name="set_swipe_back" formatted="false">Desliza hacia arriba para volver</string>
+    <string name="set_swipe_back_sub" formatted="false">Dentro de otras apps, desliza hacia arriba desde el borde inferior para volver al launcher</string>
+    <string name="set_top_swipe" formatted="false">Permitir deslizar desde arriba a pantalla completa</string>
+    <string name="set_top_swipe_sub" formatted="false">Al deslizar hacia abajo desde el borde superior aparece el panel con el brillo, luego se cierra solo</string>
+    <string name="side_clock" formatted="false">Reloj</string>
+    <string name="theme_src" formatted="false">Tema automático</string>
+    <string name="theme_src_lights" formatted="false">Solo faros</string>
+    <string name="theme_src_lights_time" formatted="false">Faros y hora</string>
+    <string name="theme_src_sub" formatted="false">Solo faros: oscuro cuando los faros están encendidos, a cualquier hora</string>
+    <string name="check_press_next">Pulsa SIGUIENTE en el volante (%1$s s)</string>
+    <string name="check_press_prev">Pulsa ANTERIOR en el volante (%1$s s)</string>
+    <string name="news_v035_1" formatted="false">Arranque más regular: Android Auto, memoria USB y radio; el reinicio del dongle solo actúa con un dongle real</string>
+    <string name="news_v035_2" formatted="false">Apaga el coche desde los ajustes (solo en P, comprobado de nuevo antes del comando)</string>
+    <string name="news_v035_3" formatted="false">Animación de carga: botón Simular carga, preparación mucho más rápida; elige los 5 botones de la barra de carga</string>
+    <string name="news_v035_4" formatted="false">Android Auto y CarPlay entre las fuentes con el teléfono conectado; títulos de canción y emisora más grandes</string>
+    <string name="news_v035_5" formatted="false">Dirección del aire, desempañado y luneta en el menú Clima (gracias a sommistica); botones siguiente/anterior del volante</string>
+    <string name="news_v035_6" formatted="false">Tema oscuro con los faros encendidos (opcional), el tema elegido a mano ya no vuelve atrás; Desliza hacia arriba para volver y panel desde arriba (opcionales)</string>
 </resources>

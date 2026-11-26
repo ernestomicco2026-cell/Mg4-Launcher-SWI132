@@ -48,6 +48,11 @@ public final class SelfCheck {
         /** Prova dei tasti: secondi che restano (sul thread principale); 0 = finita. */
         void onKeysCountdown(int seconds);
 
+        /** 0.3.5: passo guidato dei tasti: next = "premi AVANTI", altrimenti "premi INDIETRO"; secondi che restano. */
+        default void onKeysStep(boolean next, int seconds) {
+            onKeysCountdown(seconds);
+        }
+
         /** 1.0.4: prova dei fari: secondi che restano (sul thread principale); 0 = finita. */
         default void onLightsCountdown(int seconds) {
         }
@@ -99,6 +104,8 @@ public final class SelfCheck {
         l.add(new Item("avvisi", R.string.chk_notices));
         l.add(new Item("animazione", R.string.chk_charge_anim));
         l.add(new Item("ready", R.string.chk_ready));
+        l.add(new Item("spegnimento", R.string.chk_power));
+        l.add(new Item("riscaldamentoBatteria", R.string.chk_batt_heat));
         return l;
     }
 
@@ -234,7 +241,9 @@ public final class SelfCheck {
             case "temaSistema": {
                 // 0.4.4: il tema scritto dal launcher nel sistema, riletto da Settings.System SKIN_THEME_CONFIG
                 Boolean[] r = DayNight.systemCheck(c);
-                if (r[0] == null) set(it, FAIL, "tema non ancora deciso · " + DayNight.systemTxt(), "");
+                if (!DayNight.skinPresent(c)) set(it, ABSENT, "tema di sistema non presente (SKIN_THEME_CONFIG assente): solo avviso "
+                        + DayNight.SKIN_ACTION + " e UiModeManager · " + DayNight.systemTxt(), "");
+                else if (r[0] == null) set(it, FAIL, "tema non ancora deciso · " + DayNight.systemTxt(), "");
                 else if (r[1] == null) set(it, FAIL, "SKIN_THEME_CONFIG non leggibile · " + DayNight.systemTxt(), "");
                 else set(it, r[0].equals(r[1]) && DayNight.systemApplied() ? OK : FAIL, "voluto " + (r[0] ? "giorno" : "notte") + " · sistema " + (r[1] ? "giorno" : "notte")
                         + (DayNight.systemApplied() ? "" : " · configurazione diversa")
@@ -248,7 +257,8 @@ public final class SelfCheck {
                     break;
                 }
                 if (!interactive) {
-                    set(it, OK, "leggibili · " + VehicleClient.lightsDescription(), "");
+                    // 0.3.5 (punto 16): letture tutte a zero = fari spenti, è una lettura valida
+                    set(it, OK, (VehicleClient.lights() == 1 ? "accesi" : "spenti") + " · leggibili · " + VehicleClient.lightsDescription(), "");
                     break;
                 }
                 boolean seenOn = VehicleClient.lights() == 1;
@@ -260,8 +270,28 @@ public final class SelfCheck {
                     seenOn = VehicleClient.lights() == 1;
                 }
                 if (p != null) main.post(() -> p.onLightsCountdown(0));
-                set(it, seenOn ? OK : FAIL, (seenOn ? "accensione vista" : "nessuna accensione vista in 10 s") + " · "
+                // 0.3.5 (punto 16): ✗ solo se la lettura non riesce; spenti per 10 s = lettura valida "spenti"
+                int lv = VehicleClient.lights();
+                if (lv < 0) set(it, FAIL, "fari non leggibili · " + VehicleClient.lightsDescription(), "");
+                else set(it, OK, (seenOn ? "accensione vista" : "spenti (accensione non vista in 10 s)") + " · "
                         + VehicleClient.lightsDescription(), "");
+                break;
+            }
+            case "riscaldamentoBatteria": {
+                // 0.3.5 (punto 11): SOLA LETTURA, nessun comando (ICarEvService.getDrivingBatteryHeatStatus, codice 14)
+                int bh = v == null ? Integer.MIN_VALUE : v.batteryHeat();
+                if (bh == Integer.MIN_VALUE) set(it, ABSENT, "getDrivingBatteryHeatStatus non leggibile (disponibile: no)", "");
+                else set(it, OK, "disponibile: sì · getDrivingBatteryHeatStatus " + bh + (bh == 1 ? " (acceso)" : bh == 2 || bh == 0 ? " (spento)"
+                        : " (valore sconosciuto)") + " · comando setDrivingBatteryHeatStatus non usato", String.valueOf(bh));
+                break;
+            }
+            case "spegnimento": {
+                // 0.3.5 (punto 3): SOLA LETTURA, non spegne niente: il servizio comfort (setPowerModeSwitch) c'è sì/no
+                Boolean av = v == null ? null : v.powerOffAvailable();
+                String g = s == null ? "?" : VehicleClient.gearName(s.gear);
+                if (av == null) set(it, FAIL, "spegnimento disponibile: non si sa (servizio veicolo non collegato)", "");
+                else set(it, av ? OK : ABSENT, "spegnimento disponibile: " + (av ? "sì" : "no") + " · metodo ICarComfortabletService.setPowerModeSwitch "
+                        + (av ? "presente" : "assente") + " · getPowerModeSwitch non presente su SWI132 · marcia " + g + " (si spegne solo in P e ferma)", "");
                 break;
             }
             case "animazione": {
@@ -317,7 +347,10 @@ public final class SelfCheck {
                 int f = ms.favorites == null ? 0 : ms.favorites.size();
                 String elenco = Diag.value("radio.elenco");
                 if (n > 0 || f > 0) set(it, OK, n + " stazioni · " + f + " preferiti · " + elenco, String.valueOf(Math.max(n, f)));
-                else set(it, FAIL, "nessuna stazione ricevuta (aprire la Radio e fare una ricerca) · " + elenco, "0");
+                // 0.3.5 (punto 4): elenco vuoto senza aver aperto la Radio = "—" (da verificare), non un errore;
+                // ✗ solo nel controllo manuale dopo aver aperto la Radio
+                else if (!interactive || !MediaClient.radioOpened()) set(it, SKIPPED, "da verificare: elenco non ancora arrivato (Radio non aperta) · " + elenco, "");
+                else set(it, FAIL, "nessuna stazione ricevuta dopo aver aperto la Radio (fare una ricerca) · " + elenco, "0");
                 break;
             }
             case "tastiVolante": {
@@ -325,29 +358,53 @@ public final class SelfCheck {
                     set(it, SKIPPED, "saltata (controllo automatico: serve premere un tasto)", "");
                     break;
                 }
-                final int[] seen = {-1};
-                Object lock = new Object();
-                WheelKeys.setProbe((code, down, lp) -> {
-                    if (code == WheelKeys.PREV || code == WheelKeys.NEXT) synchronized (lock) {
-                        seen[0] = code;
-                        lock.notifyAll();
-                    }
-                });
-                try {
-                    for (int sec = 10; sec > 0 && seen[0] < 0; sec--) {
-                        int left = sec;
-                        if (p != null) main.post(() -> p.onKeysCountdown(left));
+                // 0.3.5 (punto 15): passo guidato. "Premi AVANTI" (10 s), poi "premi INDIETRO" (10 s): si registrano i codici
+                // grezzi visti (anche 297/298 dall'avviso SAIC) e si associano. Log tasti.volante.
+                int[] got = new int[2];
+                String[] via = new String[2];
+                String[] seenAll = {"", ""};
+                for (int step = 0; step < 2; step++) {
+                    final int st = step;
+                    got[st] = Integer.MIN_VALUE;
+                    Object lock = new Object();
+                    WheelKeys.setRawProbe((w, raw, down, lp) -> {
+                        if (!down) return;
+                        // volume e muto non contano
+                        if (raw == android.view.KeyEvent.KEYCODE_VOLUME_UP || raw == android.view.KeyEvent.KEYCODE_VOLUME_DOWN
+                                || raw == android.view.KeyEvent.KEYCODE_VOLUME_MUTE) return;
                         synchronized (lock) {
-                            if (seen[0] < 0) lock.wait(1000);
+                            seenAll[st] += (seenAll[st].isEmpty() ? "" : ", ") + raw + " (" + w + ")";
+                            // vale il primo codice visto; il tasto multimediale (87/88) ha la precedenza sull'avviso
+                            if (got[st] == Integer.MIN_VALUE || "tasto multimediale".equals(w) && !"tasto multimediale".equals(via[st])) {
+                                got[st] = raw;
+                                via[st] = w;
+                            }
+                            lock.notifyAll();
                         }
+                    });
+                    try {
+                        for (int sec = 10; sec > 0 && got[st] == Integer.MIN_VALUE; sec--) {
+                            int left = sec;
+                            if (p != null) main.post(() -> p.onKeysStep(st == 0, left));
+                            synchronized (lock) {
+                                if (got[st] == Integer.MIN_VALUE) lock.wait(1000);
+                            }
+                        }
+                        Thread.sleep(700);   // eventuale secondo evento dello stesso tasto (avviso + tasto multimediale)
+                    } finally {
+                        WheelKeys.setRawProbe(null);
                     }
-                } finally {
-                    WheelKeys.setProbe(null);
-                    if (p != null) main.post(() -> p.onKeysCountdown(0));
                 }
-                if (seen[0] > 0) set(it, OK, "visto " + seen[0] + " (" + WheelKeys.name(seen[0]) + ")", "#" + seen[0]);
-                else set(it, FAIL, "nessun tasto avanti/indietro visto in 10 s · ascolto tasti multimediali "
-                        + Diag.value("media.tastiVolante.listener") + " · " + Diag.value("media.tastiVolante"), "");
+                if (p != null) main.post(() -> p.onKeysCountdown(0));
+                WheelKeys.learn(got[0], via[0], got[1], via[1]);
+                Diag.put("tasti.volante.passo", "AVANTI: " + (seenAll[0].isEmpty() ? "niente" : seenAll[0]) + " · INDIETRO: "
+                        + (seenAll[1].isEmpty() ? "niente" : seenAll[1]));
+                boolean both = got[0] != Integer.MIN_VALUE && got[1] != Integer.MIN_VALUE, same = both && got[0] == got[1] && via[0].equals(via[1]);
+                String txt = "avanti " + (got[0] == Integer.MIN_VALUE ? "non visto" : got[0] + " (" + via[0] + ")")
+                        + " · indietro " + (got[1] == Integer.MIN_VALUE ? "non visto" : got[1] + " (" + via[1] + ")")
+                        + " · ascolto tasti multimediali " + Diag.value("media.tastiVolante.listener");
+                if (both && !same) set(it, OK, txt, got[0] + "/" + got[1]);
+                else set(it, FAIL, (same ? "stesso codice per avanti e indietro · " : "") + txt, "");
                 break;
             }
             case "ready": {

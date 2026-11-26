@@ -20,6 +20,10 @@ import android.view.KeyEvent;
  * consegna: lo lascia passare (false), tranne avanti/indietro quando suona la USB 2, che manda subito alla sessione
  * della USB 2 (sul sistema finirebbe alla USB 1). Restano il broadcast (log dei codici grezzi) e l'avviso della SWI68.
  * Log media.tastiVolante con i codici grezzi visti (mai dati personali).
+ * <p>
+ * 0.3.5 (punto 15): sulla SWI69 dall'avviso SAIC arrivano i codici 297 e 298 (probabilmente avanti/indietro). Il Controllo
+ * funzioni ha un passo guidato ("premi AVANTI", poi "premi INDIETRO") che registra i codici grezzi visti e li associa:
+ * da lì quei codici valgono avanti/indietro (anche per la USB 2). Log tasti.volante con i codici di ogni auto.
  */
 public final class WheelKeys {
     public static final String ACTION = "com.saic.keyevent.hardkey.report";
@@ -33,6 +37,17 @@ public final class WheelKeys {
 
     private static boolean registered;
     private static volatile Listener probe;
+
+    /** 0.3.5: ascolto dei codici grezzi (passo guidato del Controllo funzioni). */
+    public interface RawListener {
+        void onRaw(String via, int raw, boolean down, boolean longPress);
+    }
+
+    private static volatile RawListener rawProbe;
+    /** Codici grezzi associati dal passo guidato (Integer.MIN_VALUE = nessuno). */
+    private static volatile int learnedNext = Integer.MIN_VALUE, learnedPrev = Integer.MIN_VALUE;
+    private static volatile String learnedNextVia = "", learnedPrevVia = "";
+    private static android.content.SharedPreferences sp;
     private static volatile MediaClient media;
     private static volatile boolean keyListenerOn;
     private static int count;
@@ -45,6 +60,12 @@ public final class WheelKeys {
         if (registered) return;
         registered = true;
         Context app = c.getApplicationContext();
+        sp = app.getSharedPreferences("mg4launcher", Context.MODE_PRIVATE);
+        learnedNext = sp.getInt("tastoAvanti", Integer.MIN_VALUE);
+        learnedPrev = sp.getInt("tastoIndietro", Integer.MIN_VALUE);
+        learnedNextVia = sp.getString("tastoAvantiVia", "");
+        learnedPrevVia = sp.getString("tastoIndietroVia", "");
+        if (learnedNext != Integer.MIN_VALUE || learnedPrev != Integer.MIN_VALUE) Diag.put("tasti.volante", learnedText());
         try {
             IntentFilter f = new IntentFilter(ACTION);
             f.addAction(ACTION_SWI68);
@@ -58,7 +79,7 @@ public final class WheelKeys {
                         raw = i.getIntExtra("android.intent.extra.hardkey.keycode", -1);
                         down = i.getBooleanExtra("android.intent.extra.hardkey.down", false);
                         lp = i.getBooleanExtra("android.intent.extra.hardkey.longpress", false);
-                        code = normalize(raw);
+                        code = learned(normalize(raw), raw, "avviso SAIC");
                         via = "avviso SAIC";
                     } else {
                         raw = i.getIntExtra("KEY_CODE", -1);
@@ -68,9 +89,18 @@ public final class WheelKeys {
                         via = "avviso SWI68";
                     }
                     note(via, raw, code, down, lp);
+                    RawListener rl = rawProbe;
+                    if (rl != null) rl.onRaw(via, raw, down, lp);
                     // avanti/indietro dall'avviso: se il listener dei tasti multimediali non c'è, si prova come nella 0.3.2
                     MediaClient mc = media;
-                    if (!keyListenerOn && down && !lp && mc != null && (code == NEXT || code == PREV)) mc.onWheelSkip(code == NEXT);
+                    boolean learnedKey = raw != KeyEvent.KEYCODE_MEDIA_NEXT && raw != KeyEvent.KEYCODE_MEDIA_PREVIOUS;
+                    if (down && !lp && mc != null && (code == NEXT || code == PREV)) {
+                        // 0.3.5: codici associati dal passo guidato (es. 297/298): li gestisce già il sistema, il launcher
+                        // interviene solo con la USB 2 che suona (sul sistema finirebbero alla USB 1). Così niente doppio salto.
+                        if (learnedKey) {
+                            if (mc.usb2Playing()) mc.skipUsb2(code == NEXT);
+                        } else if (!keyListenerOn) mc.onWheelSkip(code == NEXT);
+                    }
                     Listener l = probe;
                     if (l != null) l.onKey(code, down, lp);
                 }
@@ -125,8 +155,10 @@ public final class WheelKeys {
             int raw = ev.getKeyCode();
             boolean down = ev.getAction() == KeyEvent.ACTION_DOWN;
             boolean lp = ev.isLongPress() || ev.getRepeatCount() > 0;
-            int code = normalize(raw);
+            int code = learned(normalize(raw), raw, "tasto multimediale");
             note("tasto multimediale", raw, code, down, lp);
+            RawListener rl = rawProbe;
+            if (rl != null) rl.onRaw("tasto multimediale", raw, down, lp);
             Listener l = probe;
             if (l != null) l.onKey(code, down, lp);
             MediaClient mc = media;
@@ -139,6 +171,42 @@ public final class WheelKeys {
             Diag.error("media.tastiVolante", e.toString());
         }
         return false;
+    }
+
+    /** Codice normalizzato tenendo conto dei codici associati dal passo guidato (solo sulla stessa via). */
+    private static int learned(int code, int raw, String via) {
+        if (raw == learnedNext && via.equals(learnedNextVia)) return NEXT;
+        if (raw == learnedPrev && via.equals(learnedPrevVia)) return PREV;
+        return code;
+    }
+
+    public static void setRawProbe(RawListener l) {
+        rawProbe = l;
+    }
+
+    /** 0.3.5 (punto 15): associa i codici grezzi visti nel passo guidato; next/prev = MIN_VALUE se non visti. */
+    public static void learn(int next, String nextVia, int prev, String prevVia) {
+        // solo una coppia valida: tutti e due visti e diversi (stesso tasto premuto due volte = non si associa niente)
+        if (next == Integer.MIN_VALUE || prev == Integer.MIN_VALUE || next == prev && nextVia.equals(prevVia)) {
+            Diag.put("tasti.volante", "passo guidato non valido, associazione non cambiata · " + learnedText());
+            return;
+        }
+        if (next != Integer.MIN_VALUE) {
+            learnedNext = next;
+            learnedNextVia = nextVia;
+        }
+        if (prev != Integer.MIN_VALUE) {
+            learnedPrev = prev;
+            learnedPrevVia = prevVia;
+        }
+        if (sp != null) sp.edit().putInt("tastoAvanti", learnedNext).putInt("tastoIndietro", learnedPrev)
+                .putString("tastoAvantiVia", learnedNextVia).putString("tastoIndietroVia", learnedPrevVia).apply();
+        Diag.put("tasti.volante", learnedText());
+    }
+
+    private static String learnedText() {
+        return "avanti = " + (learnedNext == Integer.MIN_VALUE ? "non visto" : "codice " + learnedNext + " (" + learnedNextVia + ")")
+                + " · indietro = " + (learnedPrev == Integer.MIN_VALUE ? "non visto" : "codice " + learnedPrev + " (" + learnedPrevVia + ")");
     }
 
     /** Prova del Controllo funzioni: riceve i tasti finché non si rimette null. */

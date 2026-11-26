@@ -375,6 +375,63 @@ public final class Confirm {
         root.addView(dim, new FrameLayout.LayoutParams(-1, -1));
     }
 
+    /** Fino a quanti valori restano sulla stessa riga nel popup di scelta; oltre, elenco che scorre. */
+    private static final int PICK_ROW_MAX = 4;
+
+    /** Altezza dell'elenco scorrevole di un popup: quella voluta (dp), ma mai oltre lo spazio che resta sullo schermo. */
+    private static int listMaxHeight(Context c, boolean hasMsg, int wantDp) {
+        int screen = c.getResources().getDisplayMetrics().heightPixels;
+        int fixed = Ui.dp(c, 34 + 30 + 40 + 22 + 24 + 40) + Ui.tp(c, 60) + (hasMsg ? Ui.dp(c, 70) : 0);
+        return Math.max(Ui.dp(c, 140), Math.min(Ui.dp(c, wantDp), screen - fixed));
+    }
+
+    /** Rosso di avviso già usato dal launcher (✗ nel Controllo funzioni): nessun colore nuovo. */
+    public static final int DANGER = 0xFFE5484D;
+
+    /**
+     * 1.0.5: conferma in un riquadro in basso, per i comandi all'auto che non si annullano (Spegni la vettura).
+     * Pulsante principale rosso; se non si tocca niente entro timeoutMs vale "Annulla". ok = null: solo un
+     * messaggio che si chiude da solo (ok = null).
+     */
+    public static void bottom(FrameLayout root, Theme t, String title, String msg, String cancel, String ok, long timeoutMs, Runnable onOk) {
+        Context c = root.getContext();
+        FrameLayout dim = new FrameLayout(c);
+        dim.setBackgroundColor(t.day ? 0x66000000 : 0xB3000000);
+        dim.setClickable(true);
+        Runnable close = () -> {
+            if (dim.getParent() != null) ((ViewGroup) dim.getParent()).removeView(dim);
+        };
+        dim.setOnClickListener(v -> close.run());
+        LinearLayout card = Ui.row(c);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setBackground(Ui.round(t.panel, Ui.dp(c, 28)));
+        card.setPadding(Ui.dp(c, 36), Ui.dp(c, 26), Ui.dp(c, 28), Ui.dp(c, 26));
+        card.setClickable(true);
+        LinearLayout texts = Ui.column(c);
+        texts.addView(Ui.text(c, title, Ui.ts(26), t.text, Ui.MEDIUM));
+        if (msg != null && !msg.isEmpty()) {
+            TextView m = Ui.text(c, msg, Ui.ts(18), t.sub, Ui.REGULAR);
+            texts.addView(m, Ui.margins(new LinearLayout.LayoutParams(-1, -2), 0, Ui.dp(c, 6), 0, 0));
+        }
+        card.addView(texts, new LinearLayout.LayoutParams(0, -2, 1f));
+        if (cancel != null) {
+            card.addView(button(c, t, cancel, false, v -> close.run()), Ui.margins(Ui.lp(-2, Ui.tp(c, 60)), Ui.dp(c, 24), 0, 0, 0));
+        }
+        if (ok != null) {
+            TextView b = button(c, t, ok, true, v -> {
+                close.run();
+                onOk.run();
+            });
+            b.setTextColor(0xFFFFFFFF);
+            b.setBackground(Ui.pressable(c, DANGER, 16 * Ui.K, t));
+            card.addView(b, Ui.margins(Ui.lp(-2, Ui.tp(c, 60)), Ui.dp(c, 12), 0, 0, 0));
+        }
+        dim.addView(card, Ui.margins(new FrameLayout.LayoutParams(Ui.dp(c, 1180), -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL),
+                0, 0, 0, Ui.dp(c, 40)));
+        root.addView(dim, new FrameLayout.LayoutParams(-1, -1));
+        dim.postDelayed(close, timeoutMs);
+    }
+
     private static TextView button(Context c, Theme t, String text, boolean primary, View.OnClickListener l) {
         TextView b = Ui.text(c, text, Ui.ts(20), primary ? t.panel : t.text, Ui.MEDIUM);
         b.setGravity(Gravity.CENTER);
@@ -383,12 +440,5 @@ public final class Confirm {
         b.setClickable(true);
         b.setOnClickListener(l);
         return b;
-    }
-
-    /** Altezza massima di un elenco nel riquadro, perché titolo e pulsanti restino sempre visibili (da SWI68 1.0.3). */
-    private static int listMaxHeight(Context c, boolean hasMsg, int wantDp) {
-        int screen = c.getResources().getDisplayMetrics().heightPixels;
-        int fixed = Ui.dp(c, 34 + 30 + 40 + 22 + 24 + 40) + Ui.tp(c, 60) + (hasMsg ? Ui.dp(c, 70) : 0);
-        return Math.max(Ui.dp(c, 140), Math.min(Ui.dp(c, wantDp), screen - fixed));
     }
 }

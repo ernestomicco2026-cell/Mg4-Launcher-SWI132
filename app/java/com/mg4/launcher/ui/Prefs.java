@@ -74,6 +74,17 @@ public final class Prefs {
         sp.edit().putString("theme", m).apply();
     }
 
+    /** 1.0.6 (issue #43): fonte del tema automatico. "fari_orario" (come prima) o "solo_fari" (scuro con i fari accesi). */
+    public static final String THEME_SRC_LIGHTS_TIME = "fari_orario", THEME_SRC_LIGHTS = "solo_fari", K_THEME_SRC = "temaAutoFonte";
+
+    public String themeAutoSource() {
+        return sp.getString(K_THEME_SRC, THEME_SRC_LIGHTS_TIME);
+    }
+
+    public void setThemeAutoSource(String v) {
+        sp.edit().putString(K_THEME_SRC, v).apply();
+    }
+
     // --- app installate nascoste dalla griglia ---
 
     public Set<String> hiddenApps() {
@@ -297,6 +308,104 @@ public final class Prefs {
         sp.edit().putString("retronebbia", v).apply();
     }
 
+    /**
+     * 1.0.6 (issue #37): quali pulsanti mostrare nella barra di ricarica (al massimo 5, nell'ordine scelto).
+     * Predefiniti = quelli di prima: limite, corrente, avvia/ferma (o V2L), programmata, sblocca presa.
+     */
+    public static final String CB_LIMIT = "limite", CB_CURRENT = "corrente", CB_START = "avvia", CB_RESERVE = "programmata",
+            CB_UNLOCK = "presa", CB_HEAT = "riscaldamento";
+    public static final String[] CB_ALL = {CB_LIMIT, CB_CURRENT, CB_START, CB_RESERVE, CB_UNLOCK, CB_HEAT};
+    public static final int CB_MAX = 5;
+
+    public java.util.List<String> chargeBar() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        String v = sp.getString("barraRicarica", null);
+        if (v == null) {
+            // SWI132: stessi pulsanti e stesso ordine della 0.3.4 (sblocca prima di programmata)
+            java.util.Collections.addAll(out, CB_LIMIT, CB_CURRENT, CB_START, CB_UNLOCK, CB_RESERVE);
+            return out;
+        }
+        for (String p : v.split(",")) {
+            p = p.trim();
+            if (java.util.Arrays.asList(CB_ALL).contains(p) && !out.contains(p) && out.size() < CB_MAX) out.add(p);
+        }
+        return out;
+    }
+
+    public void setChargeBar(java.util.List<String> ids) {
+        sp.edit().putString("barraRicarica", android.text.TextUtils.join(",", ids)).apply();
+    }
+
+    /** 1.0.5 (issue SWI132 #4): riquadro auto nel pannello sinistro (predefinito: mostrato). */
+    public boolean carPanel() {
+        return sp.getBoolean("riquadroAuto", true);
+    }
+
+    public void setCarPanel(boolean b) {
+        sp.edit().putBoolean("riquadroAuto", b).apply();
+    }
+
+    public static final String SIDE_CLOCK = "orologio", SIDE_MAP = "mappa", SIDE_MEDIA = "media", SIDE_PHONE = "telefono";
+
+    /** 1.0.5: cosa mostrare al posto dell'auto quando il riquadro auto è nascosto. */
+    public String sideWidget() {
+        if (!sp.contains("widgetSinistra") && sp.contains("riquadroAutoWidget")) {
+            sp.edit().putString("widgetSinistra", sp.getString("riquadroAutoWidget", SIDE_CLOCK)).apply();   // 0.3.4 → 0.3.5
+        }
+        String v = sp.getString("widgetSinistra", SIDE_CLOCK);
+        return SIDE_MAP.equals(v) || SIDE_MEDIA.equals(v) || SIDE_PHONE.equals(v) ? v : SIDE_CLOCK;
+    }
+
+    public void setSideWidget(String s) {
+        sp.edit().putString("widgetSinistra", s).apply();
+    }
+
+    /** 1.0.6 (issue SWI69 #2): "Scorri in su per tornare" sopra le altre app (predefinito: spento). */
+    public boolean swipeBack() {
+        return sp.getBoolean("scorriPerTornare", false);
+    }
+
+    public void setSwipeBack(boolean b) {
+        sp.edit().putBoolean("scorriPerTornare", b).apply();
+    }
+
+    /** 1.0.6 (issue #42): tendina dall'alto a schermo intero (predefinito: spento). */
+    public boolean topSwipe() {
+        return sp.getBoolean("tendinaDallAlto", false);
+    }
+
+    public void setTopSwipe(boolean b) {
+        sp.edit().putBoolean("tendinaDallAlto", b).apply();
+    }
+
+    /** 1.0.5 (sperimentale): navigatore in finestra nel pannello mappe (predefinito: spento = Indicazioni). */
+    public boolean mapPanelWindow() {
+        return sp.getBoolean("pannelloMappeFinestra", false);
+    }
+
+    public void setMapPanelWindow(boolean b) {
+        sp.edit().putBoolean("pannelloMappeFinestra", b).apply();
+    }
+
+    /** 1.0.5: Android ha rifiutato il navigatore in finestra su questa auto: l'opzione non compare più. */
+    public boolean pipRefused(String pkg) {
+        // 1.0.6: il rifiuto vale per l'app di navigazione provata (la 1.0.5 provava solo il navigatore MG)
+        return sp.getBoolean("pipRifiutata", false) && NavWindow.NAV_PKG.equals(pkg) || sp.getBoolean("pipRifiutata:" + pkg, false);
+    }
+
+    public void setPipRefused(String pkg) {
+        sp.edit().putBoolean("pipRifiutata:" + pkg, true).apply();
+    }
+
+    /** 1.0.5: pulsante "Spegni la vettura" nella barra in basso (predefinito: spento). */
+    public boolean powerButton() {
+        return sp.getBoolean("pulsanteSpegni", false);
+    }
+
+    public void setPowerButton(boolean b) {
+        sp.edit().putBoolean("pulsanteSpegni", b).apply();
+    }
+
     /** Pulsante retronebbia visibile? systemIndicator = la barra di sistema mostra già la spia luci. */
     public boolean showRearFog(boolean systemIndicator) {
         String m = rearFogMode();
@@ -476,26 +585,17 @@ public final class Prefs {
     /** Ordine in alto nel riquadro destro: false = sorgenti poi Mappa/Media (attuale, predefinito), true = scambiato. */
 
     /** Riquadro in basso accanto al clima: "media" (come prima, predefinito), "telefono" (preferiti), "app" (scorciatoie). */
-    // ---- 0.3.3 (issue SWI132 #4): riquadro auto mostrato o nascosto, con un widget al suo posto -------------
-    public static final String WIDGET_CLOCK = "orologio", WIDGET_MAP = "mappa", WIDGET_MEDIA = "media", WIDGET_PHONE = "telefono";
+    // ---- 0.3.3 (issue SWI132 #4) → 0.3.5: riquadro auto come la SWI68 1.0.5 (carPanel / sideWidget) -------------
+    public static final String WIDGET_CLOCK = SIDE_CLOCK, WIDGET_MAP = SIDE_MAP, WIDGET_MEDIA = SIDE_MEDIA, WIDGET_PHONE = SIDE_PHONE;
 
-    /** Riquadro auto (autonomia, auto disegnata, gomme, ricarica): mostrato (predefinito) o nascosto. */
+    /** Nome vecchio (0.3.3–0.3.4), stessa chiave "riquadroAuto". */
     public boolean carPanelShown() {
-        return sp.getBoolean("riquadroAuto", true);
+        return carPanel();
     }
 
-    public void setCarPanelShown(boolean b) {
-        sp.edit().putBoolean("riquadroAuto", b).apply();
-    }
-
-    /** Widget al posto del riquadro auto nascosto: orologio e data (predefinito), mappa, media, preferiti del telefono. */
+    /** Nome vecchio: ora è sideWidget (la scelta della 0.3.3–0.3.4 si porta su "widgetSinistra" una volta sola). */
     public String carWidget() {
-        String v = sp.getString("riquadroAutoWidget", WIDGET_CLOCK);
-        return WIDGET_MAP.equals(v) || WIDGET_MEDIA.equals(v) || WIDGET_PHONE.equals(v) ? v : WIDGET_CLOCK;
-    }
-
-    public void setCarWidget(String v) {
-        sp.edit().putString("riquadroAutoWidget", v).apply();
+        return sideWidget();
     }
 
     public static final String TILE_MEDIA = "media", TILE_PHONE = "telefono", TILE_APPS = "app";

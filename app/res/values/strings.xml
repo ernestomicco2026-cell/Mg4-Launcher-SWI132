@@ -553,4 +553,70 @@
     <string name="chk_ready" formatted="false">READY read</string>
     <string name="news_v034_1" formatted="false">Charging animation: it also starts with the screen on and the car parked in P; it stops only in READY, while moving or out of P</string>
     <string name="news_v034_2" formatted="false">Charging cable detected more reliably; new “READY read” test in the Feature check; texts translated in all languages</string>
+    <string name="airflow_direction" formatted="false">Air direction</string>
+    <string name="airflow_face" formatted="false">Face</string>
+    <string name="airflow_feet" formatted="false">Feet</string>
+    <string name="airflow_front_clear" formatted="false">Front demist</string>
+    <string name="airflow_rear_heat" formatted="false">Rear window heating</string>
+    <string name="airflow_window_clearing" formatted="false">Window clearing</string>
+    <string name="airflow_windscreen" formatted="false">Windscreen</string>
+    <string name="anim_sim" formatted="false">Simulate charging</string>
+    <string name="anim_sim_label" formatted="false">Simulation</string>
+    <string name="anim_sim_no_car" formatted="false">To simulate charging, show the car panel (Settings → Home)</string>
+    <string name="anim_sim_sub" formatted="false">Fakes only the cable (plugged 25 s, charge complete 10 s, unplugged): READY, gear and speed are the real ones</string>
+    <string name="car_panel_hide" formatted="false">Hide</string>
+    <string name="car_panel_show" formatted="false">Show</string>
+    <string name="cb_heat" formatted="false">Battery heating</string>
+    <string name="cb_heat_msg" formatted="false">For now the launcher only reads the status and sends no command to the car. Change it in the car\'s Energy app.</string>
+    <string name="cb_heat_title" formatted="false">Intelligent battery heating</string>
+    <string name="cb_reserve" formatted="false">Scheduled</string>
+    <string name="chk_batt_heat" formatted="false">Battery heating</string>
+    <string name="chk_power" formatted="false">Turn-off available</string>
+    <string name="map_panel_directions" formatted="false">Directions</string>
+    <string name="map_panel_window" formatted="false">Navigator in a window</string>
+    <string name="nav_missing_code">Missing icon: code %1$d</string>
+    <string name="nav_missing_error" formatted="false">Could not send the missing icon log</string>
+    <string name="nav_missing_not_configured" formatted="false">Log upload is not available in this version</string>
+    <string name="nav_missing_queued" formatted="false">Log saved: it will go with the next upload</string>
+    <string name="nav_missing_retry" formatted="false">Upload failed: the log is saved and will be retried later</string>
+    <string name="nav_missing_send" formatted="false">Send the missing icon log to the developer</string>
+    <string name="nav_missing_sending">Sending missing icon %1$d…</string>
+    <string name="nav_missing_sent" formatted="false">Log sent to the developer</string>
+    <string name="pip_refused" formatted="false">The navigator in a window is not supported on this car: the map panel goes back to normal</string>
+    <string name="power_off" formatted="false">Turn off the car</string>
+    <string name="power_off_btn" formatted="false">Turn off</string>
+    <string name="power_off_failed" formatted="false">Turn-off command failed</string>
+    <string name="power_off_msg" formatted="false">If you touch nothing, it cancels in a few seconds.</string>
+    <string name="power_off_not_p" formatted="false">Cannot turn off: shift to P</string>
+    <string name="power_off_q" formatted="false">Turn off the car?</string>
+    <string name="power_off_sub" formatted="false">Like the car\'s own button: only in P, with confirmation</string>
+    <string name="power_off_unavailable" formatted="false">Turning off is not available right now</string>
+    <string name="search_destination" formatted="false">Search for a destination</string>
+    <string name="set_charge_pick" formatted="false">Charging bar buttons</string>
+    <string name="set_charge_pick_btn" formatted="false">Choose</string>
+    <string name="set_charge_pick_sub" formatted="false">Tap up to 5 buttons, in the order you want to see them. Only those the car supports are listed.</string>
+    <string name="set_charge_pick_wait" formatted="false">The car isn\'t connected yet, so it\'s not known which buttons it supports. Try again shortly.</string>
+    <string name="set_map_panel" formatted="false">Map panel content (experimental)</string>
+    <string name="set_map_panel_sub" formatted="false">Directions as today, or the navigation app in a view-only window: a tap opens it full screen</string>
+    <string name="set_power_btn" formatted="false">Turn off the car button in the bottom bar</string>
+    <string name="set_power_btn_sub" formatted="false">Same confirmation as in the settings; works only in P</string>
+    <string name="set_side_widget" formatted="false">Instead of the car</string>
+    <string name="set_side_widget_sub" formatted="false">Large clock and date, map, media or phone favourites (the same as in the bar)</string>
+    <string name="set_swipe_back" formatted="false">Swipe up to go back</string>
+    <string name="set_swipe_back_sub" formatted="false">Inside other apps, swipe up from the bottom edge of the screen to go back to the launcher</string>
+    <string name="set_top_swipe" formatted="false">Allow swipe from the top in full screen</string>
+    <string name="set_top_swipe_sub" formatted="false">Swiping down from the top edge opens the panel with the brightness, then it closes by itself</string>
+    <string name="side_clock" formatted="false">Clock</string>
+    <string name="theme_src" formatted="false">Automatic theme</string>
+    <string name="theme_src_lights" formatted="false">Headlights only</string>
+    <string name="theme_src_lights_time" formatted="false">Headlights and time</string>
+    <string name="theme_src_sub" formatted="false">Headlights only: dark whenever the headlights are on</string>
+    <string name="check_press_next">Press NEXT on the steering wheel (%1$s s)</string>
+    <string name="check_press_prev">Press PREVIOUS on the steering wheel (%1$s s)</string>
+    <string name="news_v035_1" formatted="false">Smoother start-up: Android Auto, USB stick and radio; the dongle restart only acts with a real dongle</string>
+    <string name="news_v035_2" formatted="false">Turn off the car from the settings (only in P, checked again before the command)</string>
+    <string name="news_v035_3" formatted="false">Charging animation: Simulate charging button, much faster preparation; choose the 5 buttons of the charging bar</string>
+    <string name="news_v035_4" formatted="false">Android Auto and CarPlay among the sources while the phone is connected; bigger song and station text</string>
+    <string name="news_v035_5" formatted="false">Air direction, front demist and rear-window heating in the Climate menu (thanks to sommistica); steering-wheel next/previous buttons</string>
+    <string name="news_v035_6" formatted="false">Dark theme when the headlights are on (optional), a manually chosen theme no longer switches back; Swipe up to go back and swipe down from the top (optional)</string>
 </resources>

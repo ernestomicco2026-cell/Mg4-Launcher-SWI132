@@ -113,7 +113,8 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
         setContentView(root);
         getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(vis -> {
             // se il sistema rimostra le barre (es. dopo un popup) le rinasconde
-            if ((vis & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) root.postDelayed(this::goFullscreen, 2500);
+            // 1.0.6 (issue #42): con la tendina dall'alto accesa si lascia più tempo (barra e tendina si chiudono da sole)
+            if ((vis & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) root.postDelayed(this::goFullscreen, prefs.topSwipe() ? 6000 : 2500);
         });
         goFullscreen();
         build();
@@ -186,6 +187,12 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
         root.postDelayed(autoCheck, 120_000);
         // 0.3.1 (punto 1): giorno/notte ricontrollato ogni 10 s (il cambio si applica dopo 60 s di valore stabile)
         root.postDelayed(dayNightTick, 10_000);
+        // 0.3.5: tema rideciso subito (fari leggibili, fonte cambiata): si ricontrolla adesso invece che fra 10 s
+        com.mg4.launcher.svc.DayNight.setOnChange(() -> {
+            if (root == null) return;
+            root.removeCallbacks(dayNightTick);
+            root.post(dayNightTick);
+        });
         root.postDelayed(this::logoPacksTick, 20_000);
     }
 
@@ -466,6 +473,8 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
     /** Novità di ogni versione (testi in tutte le lingue in strings.xml). */
     private static int[] newsFor(String ver) {
         switch (ver) {
+            case "0.3.5":
+                return new int[]{R.string.news_v035_1, R.string.news_v035_2, R.string.news_v035_3, R.string.news_v035_4, R.string.news_v035_5, R.string.news_v035_6};
             case "0.3.4":
                 return new int[]{R.string.news_v034_1, R.string.news_v034_2};
             case "0.3.3":
@@ -821,6 +830,8 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
     /** Apre il navigatore scelto: MG, quello del telefono (CarPlay/Android Auto) o un'app installata. */
     @Override
     public void launchNavigator(String which) {
+        // 1.0.5: il navigatore non deve restare (o finire) nel riquadro mentre lo si apre a tutto schermo
+        com.mg4.launcher.ui.NavWindow.releaseActive("navigatore aperto a tutto schermo");
         boolean phone = media.last().deviceType != 0;
         if (Prefs.NAV_PHONE.equals(which) || (Prefs.NAV_AUTO.equals(which) && phone)) {
             if (phone) {
@@ -882,6 +893,20 @@ public final class MainActivity extends Activity implements HomeView.Host, AppsV
      * animazione-<colore>.zip nella cartella principale della chiavetta USB. Si chiudono le impostazioni e la prova
      * gira sull'auto della home: aggancio → loop (3 giri) → finita → sgancio.
      */
+    @Override
+    public VehicleClient vehicle() {
+        return vehicle;
+    }
+
+    @Override
+    public void simulateCharge() {
+        if (settings != null) closeSettings();
+        if (home == null || !home.simulateCharge()) {
+            android.widget.Toast.makeText(this, L.s(R.string.anim_sim_no_car), android.widget.Toast.LENGTH_LONG).show();
+            Diag.put("ricarica.simulazione", "non avviata: riquadro auto nascosto");
+        }
+    }
+
     @Override
     public void testChargeAnimation() {
         String color = Prefs.CAR_COLORS[prefs.carColorIndex()];

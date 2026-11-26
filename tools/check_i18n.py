@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Controllo traduzioni (SWI68 1.0.5, usato dalla SWI132 0.3.4): ogni chiave di values/strings.xml deve esistere in tutte le lingue, e nelle lingue
+"""Controllo traduzioni (1.0.5): ogni chiave di values/strings.xml deve esistere in tutte le lingue, e nelle lingue
 diverse dall'inglese non devono restare testi identici a quelli inglesi (tranne nomi propri e sigle).
 Uso: python3 tools/check_i18n.py   (esce con 1 se trova problemi)"""
 import re, sys, xml.etree.ElementTree as ET
@@ -14,9 +14,9 @@ SAME_OK = re.compile(r"^(CarPlay|Android Auto|One Pedal Drive|MG4 Launcher|MG4 S
 SAME_WORD = {
     'it': {'sec_home', 'app_account', 'group_comfort'},
     'es': {'apps_title', 'app_manual', 'upd_error_code'},
-    'de': {'sec_system', 'set_updates', 'apps_title', 'app_navigator', 'btn_logo_code', 'cam360_original'},
+    'de': {'sec_system', 'set_updates', 'apps_title', 'app_navigator', 'btn_logo_code', 'cam360_original', 'anim_sim_label'},
     'pt': {'apps_title', 'app_manual'},
-    'fr': {'app_navigator', 'logos_pack_state', 'tile_acc', 'btn_logo_code'},
+    'fr': {'app_navigator', 'logos_pack_state', 'tile_acc', 'btn_logo_code', 'anim_sim_label'},
     'tr': {'app_usb_video'},
     'pl': {'sec_system'},
 }

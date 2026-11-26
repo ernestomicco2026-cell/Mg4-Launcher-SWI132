@@ -184,6 +184,8 @@ public final class BootAccessibility extends AccessibilityService {
         ReverseReturn.init(this, null);
         HomeMode.checkExpiry(this);
         StartGuard.openWindow(this, "accensione");
+        // 1.0.6 (issue #43): ripresa della sorgente a ogni accensione (solo se Android è partito da poco)
+        if (SystemClock.elapsedRealtime() < 4 * 60_000L) MediaClient.powerOnFromSystem("accensione (servizio di accessibilità)");
         // la home MG potrebbe essere già in primo piano
         StartGuard.onForeground(this, StartGuard.topPackage(this));
         scheduleAutoHome("accensione");
@@ -241,7 +243,10 @@ public final class BootAccessibility extends AccessibilityService {
         }
 
         if (e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
-        guardAndroidSettings(pkg);   // 0.4.4 (issue #29): impostazioni di Android aperte → home MG riaccesa in anticipo
+        if (StartGuard.otherDisplay(pkg)) return;   // 0.3.5 (SWI68 1.0.6): proiezione sul quadro (display 1), non è "davanti"
+        guardAndroidSettings(pkg);
+        SwipeBack.onForeground(this, pkg);   // 0.3.5 (SWI68 1.0.6): "Scorri in su per tornare" (opzione)
+        TopSwipe.onForeground(this, pkg);    // 0.3.5 (SWI68 issue #42): tendina dall'alto a schermo intero (opzione)   // 0.4.4 (issue #29): impostazioni di Android aperte → home MG riaccesa in anticipo
         StartGuard.onForeground(this, pkg, e.getClassName() == null ? null : e.getClassName().toString(), true);
         if (getPackageName().equals(pkg)) probeSystemButton();
         // il nostro launcher deve restare in primo piano 5 s: si ricontrolla senza aspettare un altro evento

@@ -51,6 +51,11 @@
     <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
     <!-- 0.2.1: disinstallazione dalle impostazioni, senza computer -->
     <uses-permission android:name="android.permission.DELETE_PACKAGES" />
+    <!-- 1.0.5 (sperimentale): navigatore in finestra su uno schermo virtuale del launcher (firma platform) -->
+    <uses-permission android:name="android.permission.INTERNAL_SYSTEM_WINDOW" />
+    <uses-permission android:name="android.permission.ACTIVITY_EMBEDDING" />
+    <!-- 1.0.6: app davanti sullo schermo centrale (stack del display 0), non quelle del quadro -->
+    <uses-permission android:name="android.permission.MANAGE_ACTIVITY_STACKS" />
 
     <!-- SWI69: gestore batteria ("bms"), clima e luci dal CarService, concessi dalla firma platform -->
     <uses-permission android:name="android.car.permission.CAR_ENERGY" />
